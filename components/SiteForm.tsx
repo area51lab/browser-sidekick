@@ -22,6 +22,7 @@ export interface SiteFormProps {
 }
 
 type Status = 'idle' | 'loading' | 'error';
+type Details = { url: string; title: string; faviconUrl: string };
 
 const MESSAGES = {
   invalid: 'Enter a valid http(s) address.',
@@ -47,9 +48,10 @@ export function SiteForm({
   const [faviconUrl, setFaviconUrl] = useState(site?.faviconUrl ?? '');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
-  const loaded = useRef<{ url: string; title: string; faviconUrl: string } | null>(
+  const loaded = useRef<Details | null>(
     site ? { url: site.url, title: site.title, faviconUrl: site.faviconUrl ?? '' } : null,
   );
+  const pending = useRef<{ url: string; promise: Promise<Details | null> } | null>(null);
   const latest = useRef(0);
 
   const fail = (text: string) => {
@@ -57,14 +59,23 @@ export function SiteForm({
     setMessage(text);
   };
 
-  async function load(): Promise<{ url: string; title: string; faviconUrl: string } | null> {
+  function load(): Promise<Details | null> {
     const normalized = normalizeUrl(url);
     if (!normalized) {
       fail(MESSAGES.invalid);
-      return null;
+      return Promise.resolve(null);
     }
-    if (loaded.current?.url === normalized) return loaded.current;
+    if (loaded.current?.url === normalized) return Promise.resolve(loaded.current);
+    if (pending.current?.url === normalized) return pending.current.promise;
+    const promise = fetchDetails(normalized);
+    pending.current = { url: normalized, promise };
+    void promise.finally(() => {
+      if (pending.current?.promise === promise) pending.current = null;
+    });
+    return promise;
+  }
 
+  async function fetchDetails(normalized: string): Promise<Details | null> {
     const request = ++latest.current;
     setStatus('loading');
     setMessage('');
@@ -148,7 +159,7 @@ export function SiteForm({
         </wa-callout>
       )}
       <div class="site-form__actions">
-        <wa-button type="submit" variant="brand" disabled={status === 'loading'}>
+        <wa-button type="submit" variant="brand">
           {site ? 'Save' : 'Add site'}
         </wa-button>
         {site && (

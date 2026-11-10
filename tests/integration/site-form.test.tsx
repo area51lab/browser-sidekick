@@ -104,10 +104,51 @@ describe('SiteForm: adding', () => {
     await blur('url');
     expect(host.querySelector('wa-spinner')).not.toBeNull();
     expect(host.textContent).toContain('Loading site details');
-    expect(button('Add site').hasAttribute('disabled')).toBe(true);
+    expect(button('Add site').hasAttribute('disabled')).toBe(false);
     finish(metadata());
     await flush();
     expect(host.querySelector('wa-spinner')).toBeNull();
+  });
+
+  it('saves the site when the submit arrives while the blur load is in flight', async () => {
+    let finish!: (value: SiteMetadata) => void;
+    const fetchMetadata = vi.fn(() => new Promise<SiteMetadata>((resolve) => (finish = resolve)));
+    const onDone = vi.fn();
+    const { store, requestOrigin } = await setup({ fetchMetadata, onDone });
+    await type('url', 'example.com');
+    await blur('url');
+    await submit();
+    expect(await saved(store)).toEqual([]);
+
+    finish(metadata());
+    await flush();
+
+    expect(requestOrigin).toHaveBeenCalledOnce();
+    expect(fetchMetadata).toHaveBeenCalledOnce();
+    const sites = await saved(store);
+    expect(sites).toHaveLength(1);
+    expect(sites[0]).toMatchObject({ url: 'https://example.com/', title: 'Example' });
+    expect(onDone).toHaveBeenCalledOnce();
+  });
+
+  it('saves with the hostname fallback when the in-flight load fails', async () => {
+    let finish!: (value: SiteMetadata) => void;
+    const fetchMetadata = vi.fn(() => new Promise<SiteMetadata>((resolve) => (finish = resolve)));
+    const { store } = await setup({ fetchMetadata });
+    await type('url', 'example.com');
+    await blur('url');
+    await submit();
+    finish({
+      title: 'example.com',
+      faviconUrl: 'https://example.com/favicon.ico',
+      error: 'timeout',
+    });
+    await flush();
+    expect((await saved(store))[0]).toMatchObject({
+      url: 'https://example.com/',
+      title: 'example.com',
+      faviconUrl: 'https://example.com/favicon.ico',
+    });
   });
 
   it('saves a site without customName when the name is unchanged, then resets', async () => {
