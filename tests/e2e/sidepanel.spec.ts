@@ -69,3 +69,13 @@ test('side panel switches navigation modes from the options setting and keeps no
   await panel.getByRole('tab', { name: 'Notes' }).click();
   await expect(panel.locator('wa-textarea textarea')).toHaveValue('# persisted note');
 });
+
+test('cog opens settings inside the panel and back returns to the sites', async () => {
+  const panel = await context.newPage();
+  await panel.goto(`chrome-extension://${id}/sidepanel.html`);
+  await panel.getByRole('button', { name: 'Settings' }).click();
+  await expect(panel.getByRole('heading', { name: 'SideKick 🦾', level: 1 })).toBeVisible();
+  await panel.getByRole('button', { name: /Back to sites/ }).click();
+  await expect(panel.getByRole('heading', { name: 'SideKick 🦾', level: 1 })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Settings' })).toBeVisible();
+});

@@ -81,6 +81,60 @@ describe('SiteList', () => {
     expect((await store.sites.get()).map((s) => s.id)).toEqual(['c', 'a', 'b']);
   });
 
+  describe('drag and drop', () => {
+    const drag = (type: string, el: Element, withData = true) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      if (withData) {
+        Object.assign(event, { dataTransfer: { setData: vi.fn(), effectAllowed: '' } });
+      }
+      act(() => void el.dispatchEvent(event));
+      return event;
+    };
+
+    it('reorders by dropping a row onto another and persists it', async () => {
+      const store = newStore([make('a'), make('b'), make('c')]);
+      await mountNode(<SiteList store={store} />);
+      expect(row(0).getAttribute('draggable')).toBe('true');
+
+      drag('dragstart', row(0));
+      expect(row(0).className).toContain('site-row--dragging');
+      const over = drag('dragover', row(2));
+      expect(over.defaultPrevented).toBe(true);
+      expect(row(2).className).toContain('site-row--over');
+      expect(drag('drop', row(2)).defaultPrevented).toBe(true);
+      await flush();
+
+      expect(names()).toEqual(['B', 'C', 'A']);
+      expect((await store.sites.get()).map((s) => s.id)).toEqual(['b', 'c', 'a']);
+      expect(host.querySelector('.site-row--dragging')).toBeNull();
+    });
+
+    it('supports a browser event without dataTransfer', async () => {
+      const store = newStore([make('a'), make('b')]);
+      await mountNode(<SiteList store={store} />);
+      drag('dragstart', row(1), false);
+      drag('dragover', row(0));
+      drag('drop', row(0));
+      await flush();
+      expect(names()).toEqual(['B', 'A']);
+    });
+
+    it('ignores drags that did not start from a row and cancelled drags', async () => {
+      const store = newStore([make('a'), make('b')]);
+      await mountNode(<SiteList store={store} />);
+      expect(drag('dragover', row(1)).defaultPrevented).toBe(false);
+      drag('drop', row(1));
+      await flush();
+      expect(names()).toEqual(['A', 'B']);
+
+      drag('dragstart', row(0));
+      drag('dragover', row(1));
+      drag('dragend', row(0));
+      expect(host.querySelector('.site-row--dragging, .site-row--over')).toBeNull();
+      expect((await store.sites.get()).map((s) => s.id)).toEqual(['a', 'b']);
+    });
+  });
+
   it('asks for confirmation before deleting', async () => {
     const onRemove = vi.fn();
     const store = newStore([make('a'), make('b')]);

@@ -1,12 +1,13 @@
 import { defineConfig } from 'wxt';
+import { APP_NAME, DISPLAY_NAME } from './lib/brand';
 import preact from '@preact/preset-vite';
 
 export default defineConfig({
   vite: () => ({ plugins: [preact()] }),
   manifest: ({ browser }) => ({
-    name: 'sidekick',
+    name: APP_NAME,
     description: 'Side panel with your favorite websites and notes',
-    action: { default_title: 'sidekick' },
+    action: { default_title: DISPLAY_NAME },
     permissions: ['storage', 'declarativeNetRequest', 'webNavigation'],
     optional_host_permissions: ['https://*/*', 'http://*/*'],
     ...(browser === 'firefox' && {

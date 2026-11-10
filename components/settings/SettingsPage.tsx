@@ -1,15 +1,24 @@
+import { DISPLAY_NAME } from '../../lib/brand';
 import { SitesSection } from '../SitesSection';
 import type { SitesSectionProps } from '../SitesSection';
 import { AboutSection } from './AboutSection';
 import { GeneralSection } from './GeneralSection';
 import './settings.css';
 
-export type SettingsPageProps = Partial<SitesSectionProps>;
+export interface SettingsPageProps extends Partial<SitesSectionProps> {
+  /** When set (in-panel view), shows a way back to the sites. */
+  onBack?: () => void;
+}
 
-export function SettingsPage(props: SettingsPageProps) {
+export function SettingsPage({ onBack, ...props }: SettingsPageProps) {
   return (
     <main class="settings-page">
-      <h1>sidekick</h1>
+      {onBack && (
+        <button type="button" class="settings-back" onClick={onBack}>
+          ← Back to sites
+        </button>
+      )}
+      <h1>{DISPLAY_NAME}</h1>
       <GeneralSection store={props.store} />
       <SitesSection {...props} />
       <AboutSection />

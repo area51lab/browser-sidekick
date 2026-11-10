@@ -40,3 +40,18 @@
     padding: var(--wa-space-m);
   }
 }
+
+.settings-back {
+  align-self: flex-start;
+  padding: var(--wa-space-2xs) var(--wa-space-xs);
+  border: 0;
+  border-radius: var(--wa-border-radius-m);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings-back:hover {
+  background: var(--wa-color-surface-lowered);
+}

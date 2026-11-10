@@ -13,4 +13,5 @@ export interface NavProps {
   items: NavItem[];
   activeId: string;
   onSelect: (id: string) => void;
+  onOpenSettings: () => void;
 }

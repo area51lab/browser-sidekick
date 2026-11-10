@@ -1,9 +1,12 @@
 import { NavIcon } from './NavIcon';
 import { nextIndex } from './roving';
 import type { Orientation } from './roving';
-import type { NavProps } from './types';
+import type { NavItem } from './types';
 
-export interface NavTabListProps extends NavProps {
+export interface NavTabListProps {
+  items: NavItem[];
+  activeId: string;
+  onSelect: (id: string) => void;
   orientation: Orientation;
   showNames: boolean;
 }
