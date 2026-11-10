@@ -40,6 +40,7 @@ entrypoints/
   sidepanel/          Chrome side_panel and Firefox sidebar_action (one WXT entrypoint)
   options/            options page
 components/           shared Preact components (SiteFrame: iframe with refusal fallback)
+components/settings/  options page sections (General, About) and SettingsPage
 lib/                  shared helpers (theme, mounting)
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
 lib/embedding/       DNR rule builder, rule sync and site permission helper
@@ -92,3 +93,7 @@ Each browser tab has its own state in `storage.session` (`useTabState(tabId)`): 
 - Notes tab with markdown (marked + DOMPurify)
 - Follow browser theme colors where possible
 - Playwright smoke test
+
+## Options page
+
+`entrypoints/options` renders `SettingsPage`: General, Sites and About. General edits `settings` through `useSettings`, so there is no save button and an open side panel updates live. Navigation mode is a single radio group, so only one mode is active; the top bar display choice appears only when the top bar is selected. The browser theme colors switch is disabled until `settings.useBrowserThemeColors` exists.
