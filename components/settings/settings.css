@@ -1,0 +1,42 @@
+.settings-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-2xl);
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--wa-space-l);
+}
+
+.settings-page h1,
+.settings-section h2 {
+  margin: 0;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-l);
+  min-width: 0;
+}
+
+.field {
+  display: block;
+}
+
+.field__hint {
+  display: block;
+  color: var(--wa-color-text-quiet);
+  font-size: var(--wa-font-size-s);
+}
+
+.field--row wa-switch {
+  max-width: 100%;
+}
+
+@media (max-width: 30rem) {
+  .settings-page {
+    padding: var(--wa-space-m);
+  }
+}

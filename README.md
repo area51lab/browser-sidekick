@@ -40,6 +40,7 @@ entrypoints/
   sidepanel/          Chrome side_panel and Firefox sidebar_action (one WXT entrypoint)
   options/            options page
 components/           shared Preact components (SiteFrame: iframe with refusal fallback)
+components/settings/  options page sections (General, About) and SettingsPage
 lib/                  shared helpers (theme, mounting)
 lib/theme/            color scheme, browser theme mapping and `useTheme()`
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
@@ -101,6 +102,10 @@ Each browser tab has its own state in `storage.session` (`useTabState(tabId)`): 
 - Firefox: `lib/theme/` reads `browser.theme.getCurrent()` and subscribes to `browser.theme.onUpdated`. `mapBrowserTheme` maps popup, toolbar and frame colors (plus `popup_border`/`sidebar_border` and an accent from `icons_attention`, `tab_line` or `button_background_active`) to Web Awesome surface, text, border and brand tokens, set as inline custom properties on `<html>`. The last mapping is cached in `localStorage` so the first paint already matches.
 - Contrast safety: text and surface come from the first of popup, toolbar or frame whose pair meets WCAG AA (4.5:1). If none does, or a color is translucent or unparsable, the default Web Awesome tokens apply. Derived brand and muted-text tokens are skipped individually when they would fail AA.
 - Chrome has no theme color API, so the `sk-system-colors` class maps the tokens to CSS system colors (`Canvas`, `CanvasText`, `AccentColor`) with `color-scheme: light dark`.
-- `settings.useBrowserThemeColors` (optional boolean, default `true`): when `false`, neither Firefox colors nor system colors are applied and only the light/dark Web Awesome theme is used. The settings UI is rendered by another task.
+- `settings.useBrowserThemeColors` (optional boolean, default `true`): when `false`, neither Firefox colors nor system colors are applied and only the light/dark Web Awesome theme is used.
 - API: `useTheme({ root?, store?, api? })` returns `{ scheme, source: 'default' | 'system' | 'browser', tokens }`. Pure helpers (`parseColor`, `contrastRatio`, `meetsAA`, `mapBrowserTheme`) are exported from `lib/theme`.
 - Notes preview HTML (sanitized by DOMPurify) is styled only with Web Awesome tokens, so code, quotes and tables stay readable in dark mode and with browser colors.
+
+## Options page
+
+`entrypoints/options` renders `SettingsPage`: General, Sites and About. General edits `settings` through `useSettings`, so there is no save button and an open side panel updates live. Navigation mode is a single radio group, so only one mode is active; the top bar display choice appears only when the top bar is selected. The browser theme colors switch edits `settings.useBrowserThemeColors`.
