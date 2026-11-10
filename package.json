@@ -14,7 +14,8 @@
     "test": "vitest run",
     "lint": "eslint . && prettier --check .",
     "typecheck": "wxt prepare && tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@awesome.me/webawesome": "^3.14.0",
@@ -26,6 +27,7 @@
     "@eslint/js": "^10.0.1",
     "@preact/preset-vite": "^2.10.6",
     "@types/chrome": "^0.3.7",
+    "@vitest/coverage-v8": "^5.1.0",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^21.0.4",

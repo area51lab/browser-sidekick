@@ -44,7 +44,6 @@ lib/                  shared helpers (theme, mounting)
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
 lib/embedding/       DNR rule builder, rule sync and site permission helper
 lib/siteMetadata.ts   title and favicon fetching, URL normalization
-lib/requestOrigin.ts  host permission request for a site origin
 assets/base.css       base stylesheet and Web Awesome theme
 tests/helpers/        test utilities (fake storage adapter)
 tests/unit/           unit tests
@@ -68,11 +67,28 @@ Sites are shown in an iframe, and most sites forbid that with `X-Frame-Options` 
 - Third-party cookies: embedded sites are third-party in the extension page, so `SameSite=Lax/Strict` cookies are not sent and logins may not persist; browsers that block third-party cookies break them entirely.
 - A refused frame cannot be told apart from a slow site, so the fallback relies on a load timeout.
 
+## Per-tab state
+
+Each browser tab has its own state in `storage.session` (`useTabState(tabId)`): the active item and the current URL of each site. The panel remounts when the active browser tab changes and keeps iframes of the viewed tab only, so nothing is kept alive for other tabs. A tab that has no state starts from defaults (first item, configured URLs). State is removed when the tab closes.
+
+- `settings.persistence = 'last-url'` loads the tracked URL when a site iframe is first mounted; `'configured-url'` always loads the configured URL. The URL is resolved once per mount, so navigation inside a frame never reloads it.
+- Tracking: a cross-origin iframe does not expose its location, so `useSiteUrlTracking` listens to `webNavigation.onCommitted` and `onHistoryStateUpdated` for sub frames and keeps only frames whose parent frame is an extension page (`getFrame` on the parent, compared with `runtime.getURL('/')`). A frame is attributed to a site by host on its first event and stays bound to it, so redirects to another host keep being tracked.
+- The `webNavigation` permission is required because there is no other way to read the location of a cross-origin frame. It grants no host access and no page content.
+
+### Known limits
+
+- Events carry a frame id and URL only, so two sites sharing a host (or one a subdomain of the other) are ambiguous; the first one in the list wins.
+- Firefox may not report side panel (sidebar) frames to `webNavigation`; when no events arrive the last URL falls back to the configured one.
+- Only http(s) URLs are tracked.
+
+## Coverage
+
+`pnpm test:coverage` runs the tests with V8 coverage (text report and `coverage/coverage-summary.json`).
+
 ## TODO
 
 - Add a Firefox gecko extension id before publishing
 - Navigation modes: dropdown, icon sidebar, top bar
-- Per-tab state with "remember last URL" or "always reset"
 - Notes tab with markdown (marked + DOMPurify)
 - Follow browser theme colors where possible
 - Playwright smoke test

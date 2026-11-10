@@ -3,6 +3,7 @@ import { render } from 'preact';
 import { act } from 'preact/test-utils';
 
 const openOptionsPage = vi.fn();
+vi.mock('@awesome.me/webawesome/dist/components/textarea/textarea.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/select/select.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/option/option.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/button/button.js', () => ({}));
@@ -10,7 +11,16 @@ vi.mock('../../components/SiteView', () => ({
   SiteView: ({ url }: { url: string }) => <div class="site-view" data-url={url} />,
 }));
 vi.mock('wxt/browser', () => ({
-  browser: { runtime: { openOptionsPage }, storage: {}, tabs: {} },
+  browser: {
+    runtime: { openOptionsPage, getURL: () => 'chrome-extension://x/' },
+    storage: {},
+    tabs: {},
+    webNavigation: {
+      getFrame: async () => undefined,
+      onCommitted: { addListener: () => {}, removeListener: () => {} },
+      onHistoryStateUpdated: { addListener: () => {}, removeListener: () => {} },
+    },
+  },
 }));
 
 const { Panel } = await import('../../entrypoints/sidepanel/Panel');
@@ -85,7 +95,7 @@ describe('Panel', () => {
     cleanup = unmount;
     await settle(() => tabs(host)[0]!.click());
     expect(host.textContent).not.toContain('No sites yet');
-    expect(host.querySelector('.notes-tab')).not.toBeNull();
+    expect(host.querySelector('.notes')).not.toBeNull();
   });
 
   it.each<NavigationMode>(['dropdown', 'icon-sidebar', 'top-bar'])(
@@ -196,12 +206,12 @@ describe('Panel', () => {
   it('mounts notes lazily and hides it when switching away', async () => {
     const { host, unmount } = await setup({ navigationMode: 'icon-sidebar' });
     cleanup = unmount;
-    expect(host.querySelector('.notes-tab')).toBeNull();
+    expect(host.querySelector('.notes')).toBeNull();
     await settle(() => tabs(host)[2]!.click());
-    expect(hiddenOf(host.querySelector('.notes-tab')!)).toBe(false);
+    expect(hiddenOf(host.querySelector('.notes')!)).toBe(false);
     expect(hiddenOf(frames(host)[0]!)).toBe(true);
     await settle(() => tabs(host)[0]!.click());
-    expect(hiddenOf(host.querySelector('.notes-tab')!)).toBe(true);
+    expect(hiddenOf(host.querySelector('.notes')!)).toBe(true);
   });
 
   it('restores the stored active item and unmounts removed sites', async () => {

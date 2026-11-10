@@ -6,8 +6,15 @@ import { buildNavItems, resolveActiveId } from '../../components/nav/items';
 import { NOTES_ID } from '../../components/nav/types';
 import { NotesTab } from '../../components/notes/NotesTab';
 import { SiteView } from '../../components/SiteView';
-import { resolveInitialUrl, useSettings, useSites, useTabState } from '../../lib/storage';
+import {
+  resolveInitialUrl,
+  useSettings,
+  useSites,
+  useTabState,
+  withActiveItem,
+} from '../../lib/storage';
 import type { Store } from '../../lib/storage';
+import { useSiteUrlTracking } from './useSiteUrlTracking';
 import { useVisited } from './useVisited';
 import '../../components/nav/nav.css';
 import './panel.css';
@@ -21,6 +28,7 @@ export function Panel({ tabId, store }: PanelProps) {
   const sites = useSites(store);
   const settings = useSettings(store);
   const tabState = useTabState(tabId, store);
+  useSiteUrlTracking(sites.value, tabState.update);
   const frozenUrls = useRef<Record<string, string>>({});
 
   const items = buildNavItems(sites.value);
@@ -32,7 +40,7 @@ export function Panel({ tabId, store }: PanelProps) {
 
   if (!sites.ready || !settings.ready || !tabState.ready) return null;
 
-  const select = (id: string) => void tabState.update((state) => ({ ...state, activeItemId: id }));
+  const select = (id: string) => void tabState.update((state) => withActiveItem(state, id));
 
   return (
     <div class={`panel panel-${settings.value.navigationMode}`}>
@@ -68,7 +76,7 @@ export function Panel({ tabId, store }: PanelProps) {
           })}
         {visited.includes(NOTES_ID) && (
           <div class="panel-item" hidden={activeId !== NOTES_ID}>
-            <NotesTab />
+            <NotesTab store={store} />
           </div>
         )}
       </main>

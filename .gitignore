@@ -4,3 +4,4 @@ node_modules
 .wxt
 *.log
 .cache/
+coverage

@@ -10,3 +10,4 @@ export { SCHEMA_VERSION, migrate } from './schema';
 export type { Migration, Snapshot } from './schema';
 export { createStore, getStore, registerTabCleanup, tabKey } from './store';
 export type { Store, StoreOptions } from './store';
+export * from './tabState';

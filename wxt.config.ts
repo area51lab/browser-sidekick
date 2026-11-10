@@ -7,7 +7,7 @@ export default defineConfig({
     name: 'sidekick',
     description: 'Side panel with your favorite websites and notes',
     action: { default_title: 'sidekick' },
-    permissions: ['storage', 'declarativeNetRequest'],
+    permissions: ['storage', 'declarativeNetRequest', 'webNavigation'],
     optional_host_permissions: ['https://*/*', 'http://*/*'],
   },
 });
