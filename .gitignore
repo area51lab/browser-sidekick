@@ -1,0 +1,6 @@
+.context/
+node_modules
+.output
+.wxt
+*.log
+.cache/
