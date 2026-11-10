@@ -9,11 +9,12 @@ From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpac
 ## Using sidekick
 
 - **Open the panel**: click the sidekick toolbar icon. Chrome opens the side panel; Firefox toggles the sidebar.
-- **Add a site**: open the options page, type an address under Sites and press "Add site". The browser asks for access to that one site only; sidekick uses it to read the site's name and icon and to let it be shown in the panel. You can rename, reorder, edit and delete sites later.
-- **Switch navigation mode**: the settings choose how you move between sites and notes: a dropdown, an icon sidebar or a top bar.
-- **Persistence**: with "last URL" a site reopens where you left it in that browser tab; with "configured URL" it always starts from its saved address.
-- **Notes**: the Notes tab holds markdown notes that autosave, with an edit and preview toggle. Previews are sanitized.
-- Some sites refuse to be embedded; the panel then offers "Open in tab". See [Known limits](#known-limits).
+- **Add a site**: open the options page, type an address under Sites and press "Add site". The browser asks for access to that one site only; sidekick uses it to read the site's name and icon and to let it be shown in the panel. If the details cannot be loaded, the site is still saved with its hostname and `/favicon.ico`. You can rename, reorder, edit and delete sites later.
+- **Navigation mode**: in the options General section choose a dropdown, an icon sidebar or a top bar (icons or names). An open panel updates live.
+- **Persistence**: with "Remember last URL" a site reopens where you left it in that browser tab; with "Always return to configured URL" it always starts from its saved address.
+- **Notes**: the Notes item holds markdown notes that autosave, with an edit and preview toggle. Previews are sanitized.
+- **Theme**: the panel follows the browser light/dark preference. "Use browser theme colors" (on by default) also applies Firefox theme colors, or system colors on Chrome.
+- Some sites refuse to be embedded; the panel then offers "Open in tab". See the known limits below.
 
 ## Privacy
 
@@ -25,18 +26,15 @@ From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpac
 
 ## Development
 
-## Requirements
-
-- Node.js 20+
-- pnpm 10+
-
-## Setup
+Requirements: Node.js 20+ and pnpm 10+.
 
 ```sh
 pnpm install
+pnpm dev            # Chrome with hot reload
+pnpm dev:firefox    # Firefox with hot reload
+pnpm check          # lint, typecheck, coverage and both builds
+pnpm test:e2e       # Playwright (needs pnpm build and `pnpm exec playwright install chromium` once)
 ```
-
-## Scripts
 
 | Script                              | Purpose                                                              |
 | ----------------------------------- | -------------------------------------------------------------------- |
@@ -44,42 +42,57 @@ pnpm install
 | `pnpm build` / `pnpm build:firefox` | Production build into `.output/`                                     |
 | `pnpm zip` / `pnpm zip:firefox`     | Store-ready archives in `.output/` (Firefox also gets a sources zip) |
 | `pnpm check`                        | Lint, typecheck, coverage and both builds                            |
+| `pnpm lint` / `pnpm typecheck`      | ESLint + Prettier check / strict TypeScript                          |
 | `pnpm lint:firefox`                 | `web-ext lint` on the Firefox build (run `pnpm build:firefox` first) |
-| `pnpm test:e2e`                     | Playwright smoke test in Chromium (run `pnpm build` first)           |
+| `pnpm test` / `pnpm test:coverage`  | Unit and integration tests (Vitest), optionally with V8 coverage     |
+| `pnpm test:e2e`                     | Playwright tests in Chromium (run `pnpm build` first)                |
 | `pnpm icons`                        | Regenerate `public/icon/*.png` from `assets/icon.svg`                |
-| `pnpm test`                         | Unit and integration tests (Vitest)                                  |
-| `pnpm lint`                         | ESLint and Prettier check                                            |
-| `pnpm typecheck`                    | TypeScript strict check                                              |
 
-## Load unpacked
-
-Chrome: run `pnpm build`, open `chrome://extensions`, enable Developer mode, click "Load unpacked" and select `.output/chrome-mv3`. Click the toolbar icon to open the side panel.
-
-Firefox: run `pnpm build:firefox`, open `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select `.output/firefox-mv3/manifest.json`. Open the sidebar from View > Sidebar > sidekick.
-
-## Layout
+Layout:
 
 ```
 entrypoints/
   background.ts       service worker (Chrome) / background script (Firefox)
   sidepanel/          Chrome side_panel and Firefox sidebar_action (one WXT entrypoint)
   options/            options page
-components/           shared Preact components (SiteFrame: iframe with refusal fallback)
-components/settings/  options page sections (General, About) and SettingsPage
-lib/                  shared helpers (theme, mounting)
+components/           Preact components (SiteForm, SiteFrame, SiteList, notes, nav, settings)
+lib/                  mounting, site metadata, markdown, toolbar action
 lib/theme/            color scheme, browser theme mapping and `useTheme()`
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
-lib/embedding/       DNR rule builder, rule sync and site permission helper
-lib/siteMetadata.ts   title and favicon fetching, URL normalization
-assets/base.css       base stylesheet and Web Awesome theme
-assets/icon.svg       icon source; PNGs in public/icon/ are generated by `pnpm icons`
-lib/toolbar.ts        toolbar action: open side panel (Chrome) / toggle sidebar (Firefox)
+lib/embedding/        DNR rule builder, rule sync and site permission helper
+lib/navigation/       active browser tab and per-tab navigation helpers
+assets/               base stylesheet, icon source
 scripts/              icon generation
-tests/e2e/            Playwright smoke test (excluded from `pnpm test`)
-tests/helpers/        test utilities (fake storage adapter)
 tests/unit/           unit tests
 tests/integration/    integration tests
+tests/e2e/            Playwright tests (excluded from `pnpm test`)
+tests/helpers/        test utilities (fake storage adapter, theme fakes)
 ```
+
+Coverage: `pnpm test:coverage` prints a V8 report (`coverage/coverage-summary.json`). Entrypoint `main.tsx` files and `background.ts` are excluded; they are covered by the e2e tests and the manual checklist.
+
+E2E: `tests/e2e/` loads the built Chrome extension in Chromium, adds a site on the options page, switches the three navigation modes from the options setting while the side panel page is open, and checks notes survive a reload. The side panel is opened as a regular extension page, because Playwright cannot open the real side panel. The permission prompt cannot be automated, so `chrome.permissions.request` is stubbed to grant. Firefox is not covered by Playwright.
+
+## Load unpacked
+
+Chrome: run `pnpm build`, open `chrome://extensions`, enable Developer mode, click "Load unpacked" and select `.output/chrome-mv3`. Click the toolbar icon to open the side panel.
+
+Firefox: run `pnpm build:firefox`, open `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on" and select `.output/firefox-mv3/manifest.json`. Open the sidebar from the toolbar button or View > Sidebar > sidekick.
+
+## Manual QA checklist (5 minutes)
+
+Run once in Chrome and once in Firefox after loading the build.
+
+1. Click the toolbar icon: the panel (Chrome) or sidebar (Firefox) opens; click again on Firefox: it closes.
+2. Open the options page (Chrome: extension details > Extension options; Firefox: about:addons > sidekick > Preferences). Add `example.com`: the permission prompt appears, accept it, the name and icon fill in, the site appears in the list.
+3. Type an address and click "Add site" immediately, without tabbing out first: the site is saved.
+4. Add a second site, then rename, reorder and delete one; the panel updates without reopening.
+5. Switch Navigation between Dropdown, Icon sidebar and Top bar (icons and names) with the panel open: it changes live and clicking an item shows that site.
+6. Open Notes, type markdown, wait for "Saved", toggle Preview (headings and lists render, a `<script>` stays inert), close and reopen the panel: the text is still there.
+7. Navigate inside a site, switch to another browser tab and back: with "Remember last URL" the site reopens at the last page; with "Always return to configured URL" it starts from the saved address (Firefox may always use the configured URL, a known limit).
+8. Switch the OS or browser to dark mode: the panel and options follow. Toggle "Use browser theme colors" off and on; on Firefox with a custom theme the colors change.
+9. Add a site that still refuses embedding (one that detects framing in JavaScript): after up to 10 seconds the "refuses to be embedded" message appears with "Open in tab".
+10. Deny the permission prompt when adding a site: a warning appears and the site can still be saved with its hostname.
 
 ## Site embedding
 
@@ -90,7 +103,7 @@ Sites are shown in an iframe, and most sites forbid that with `X-Frame-Options` 
 - Only `storage` and `declarativeNetRequest` are required. Host access is requested per site with `ensureSitePermission(url)`, which calls `permissions.request` for the site origin and must run in a user gesture (the add-site submit). Origins are declared as `optional_host_permissions` (`http://*/*`, `https://*/*`), so nothing is granted at install.
 - `SiteFrame` shows a spinner while loading and, if the frame errors, loads blank or does not load within 10 seconds, a "This site refuses to be embedded" message with an "Open in tab" button.
 
-### Known limits
+### Embedding limits
 
 - DNR cannot edit a header value, so the whole `Content-Security-Policy` header is removed for the embedded site frame, not only `frame-ancestors`. Page-level CSP of those sites is therefore not enforced inside the panel. `Content-Security-Policy-Report-Only` is left untouched.
 - Firefox supports `modifyHeaders` in MV3 since Firefox 128; older versions are not supported and no `webRequest` blocking fallback is shipped. Firefox also grants optional host permissions only after a user gesture, same as Chrome.
@@ -106,15 +119,33 @@ Each browser tab has its own state in `storage.session` (`useTabState(tabId)`): 
 - Tracking: a cross-origin iframe does not expose its location, so `useSiteUrlTracking` listens to `webNavigation.onCommitted` and `onHistoryStateUpdated` for sub frames and keeps only frames whose parent frame is an extension page (`getFrame` on the parent, compared with `runtime.getURL('/')`). A frame is attributed to a site by host on its first event and stays bound to it, so redirects to another host keep being tracked.
 - The `webNavigation` permission is required because there is no other way to read the location of a cross-origin frame. It grants no host access and no page content.
 
-### Known limits
+### Per-tab limits
 
 - Events carry a frame id and URL only, so two sites sharing a host (or one a subdomain of the other) are ambiguous; the first one in the list wins.
 - Firefox may not report side panel (sidebar) frames to `webNavigation`; when no events arrive the last URL falls back to the configured one.
 - Only http(s) URLs are tracked.
 
-## Coverage
+## Theme
 
-`pnpm test:coverage` runs the tests with V8 coverage (text report and `coverage/coverage-summary.json`).
+`mount()` applies the Web Awesome `wa-dark` class from `prefers-color-scheme` before rendering (no flash) and `useTheme()` keeps it in sync live, so the side panel and the options page follow the browser light/dark preference.
+
+- Firefox: `lib/theme/` reads `browser.theme.getCurrent()` and subscribes to `browser.theme.onUpdated`. `mapBrowserTheme` maps popup, toolbar and frame colors (plus `popup_border`/`sidebar_border` and an accent from `icons_attention`, `tab_line` or `button_background_active`) to Web Awesome surface, text, border and brand tokens, set as inline custom properties on `<html>`. The last mapping is cached in `localStorage` so the first paint already matches.
+- Contrast safety: text and surface come from the first of popup, toolbar or frame whose pair meets WCAG AA (4.5:1). If none does, or a color is translucent or unparsable, the default Web Awesome tokens apply. Derived brand and muted-text tokens are skipped individually when they would fail AA.
+- Chrome has no theme color API, so the `sk-system-colors` class maps the tokens to CSS system colors (`Canvas`, `CanvasText`, `AccentColor`) with `color-scheme: light dark`.
+- `settings.useBrowserThemeColors` (optional boolean, default `true`): when `false`, neither Firefox colors nor system colors are applied and only the light/dark Web Awesome theme is used.
+- API: `useTheme({ root?, store?, api? })` returns `{ scheme, source: 'default' | 'system' | 'browser', tokens }`. Pure helpers (`parseColor`, `contrastRatio`, `meetsAA`, `mapBrowserTheme`) are exported from `lib/theme`.
+- Notes preview HTML (sanitized by DOMPurify) is styled only with Web Awesome tokens, so code, quotes and tables stay readable in dark mode and with browser colors.
+
+## Options page
+
+`entrypoints/options` renders `SettingsPage`: General, Sites and About. General edits `settings` through `useSettings`, so there is no save button and an open side panel updates live. Navigation mode is a single radio group, so only one mode is active; the top bar display choice appears only when the top bar is selected. The browser theme colors switch edits `settings.useBrowserThemeColors`.
+
+## Known limits
+
+- **CSP header removal**: to allow framing, the whole `Content-Security-Policy` response header of embedded site frames is removed (DNR cannot edit a value), so those sites' own CSP is not enforced inside the panel. `Content-Security-Policy-Report-Only` is untouched. Rules apply only to sub frames started by the extension.
+- **webNavigation on Firefox**: sidebar frames may not be reported, so "Remember last URL" can fall back to the configured URL. Only http(s) URLs are tracked.
+- **Shared-host ambiguity**: frame events carry only a URL, so two sites on the same host (or a site on a subdomain of another) cannot be told apart; the first one in the list wins.
+- Frame busters, third-party cookie blocking and slow-site detection by timeout are covered in the embedding limits above. Firefox needs 128 or newer.
 
 ## Firefox parity
 
@@ -139,22 +170,3 @@ Firefox-specific limits: see also the embedding and per-tab sections above.
 | ------- | -------- | ---------------- | -------- |
 | Chrome  | 484.6 kB | 128.7 kB         | 132.3 kB |
 | Firefox | 484.8 kB | 128.8 kB         | 132.3 kB |
-
-## Smoke test
-
-`pnpm build && pnpm test:e2e` loads the built Chrome extension in Chromium (`pnpm exec playwright install chromium` once), opens the options page, adds a site and checks it is listed. Chrome cannot show its permission prompt in automation, so the test stubs `chrome.permissions.request` to grant. Firefox is not covered by Playwright.
-
-## Theme
-
-`mount()` applies the Web Awesome `wa-dark` class from `prefers-color-scheme` before rendering (no flash) and `useTheme()` keeps it in sync live, so the side panel and the options page follow the browser light/dark preference.
-
-- Firefox: `lib/theme/` reads `browser.theme.getCurrent()` and subscribes to `browser.theme.onUpdated`. `mapBrowserTheme` maps popup, toolbar and frame colors (plus `popup_border`/`sidebar_border` and an accent from `icons_attention`, `tab_line` or `button_background_active`) to Web Awesome surface, text, border and brand tokens, set as inline custom properties on `<html>`. The last mapping is cached in `localStorage` so the first paint already matches.
-- Contrast safety: text and surface come from the first of popup, toolbar or frame whose pair meets WCAG AA (4.5:1). If none does, or a color is translucent or unparsable, the default Web Awesome tokens apply. Derived brand and muted-text tokens are skipped individually when they would fail AA.
-- Chrome has no theme color API, so the `sk-system-colors` class maps the tokens to CSS system colors (`Canvas`, `CanvasText`, `AccentColor`) with `color-scheme: light dark`.
-- `settings.useBrowserThemeColors` (optional boolean, default `true`): when `false`, neither Firefox colors nor system colors are applied and only the light/dark Web Awesome theme is used.
-- API: `useTheme({ root?, store?, api? })` returns `{ scheme, source: 'default' | 'system' | 'browser', tokens }`. Pure helpers (`parseColor`, `contrastRatio`, `meetsAA`, `mapBrowserTheme`) are exported from `lib/theme`.
-- Notes preview HTML (sanitized by DOMPurify) is styled only with Web Awesome tokens, so code, quotes and tables stay readable in dark mode and with browser colors.
-
-## Options page
-
-`entrypoints/options` renders `SettingsPage`: General, Sites and About. General edits `settings` through `useSettings`, so there is no save button and an open side panel updates live. Navigation mode is a single radio group, so only one mode is active; the top bar display choice appears only when the top bar is selected. The browser theme colors switch edits `settings.useBrowserThemeColors`.
