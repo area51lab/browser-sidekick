@@ -4,13 +4,14 @@ import '@awesome.me/webawesome/dist/components/callout/callout.js';
 import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import './sites.css';
-import { requestOrigin as defaultRequestOrigin } from '../lib/requestOrigin';
-import type { RequestOrigin } from '../lib/requestOrigin';
+import { ensureSitePermission } from '../lib/embedding/permissions';
 import { fetchSiteMetadata, normalizeUrl } from '../lib/siteMetadata';
 import type { SiteMetadata } from '../lib/siteMetadata';
 import { addSite, createSite, updateSite, useSites } from '../lib/storage';
 import type { Site, Store } from '../lib/storage';
 import { SiteIcon } from './SiteIcon';
+
+export type RequestOrigin = (url: string) => Promise<boolean>;
 
 export interface SiteFormProps {
   site?: Site;
@@ -34,7 +35,7 @@ const valueOf = (event: Event): string => (event.currentTarget as HTMLInputEleme
 export function SiteForm({
   site,
   store,
-  requestOrigin = defaultRequestOrigin,
+  requestOrigin = ensureSitePermission,
   fetchMetadata = fetchSiteMetadata,
   onDone,
 }: SiteFormProps) {
