@@ -10,7 +10,6 @@ const navListeners = new Set<NavListener>();
 const activatedListeners = new Set<ActivatedListener>();
 const query = vi.fn();
 
-vi.mock('@awesome.me/webawesome/dist/components/tooltip/tooltip.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/textarea/textarea.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/select/select.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/option/option.js', () => ({}));

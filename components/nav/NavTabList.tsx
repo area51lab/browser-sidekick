@@ -1,4 +1,3 @@
-import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js';
 import { NavIcon } from './NavIcon';
 import { nextIndex } from './roving';
 import type { Orientation } from './roving';
@@ -41,20 +40,13 @@ export function NavTabList({ items, activeId, onSelect, orientation, showNames }
               class={`nav-tab nav-tab-${item.kind}`}
               aria-selected={active}
               aria-label={item.label}
+              title={showNames ? undefined : item.label}
               tabIndex={active ? 0 : -1}
               onClick={() => onSelect(item.id)}
             >
               <NavIcon item={item} />
               {showNames && <span class="nav-label">{item.label}</span>}
             </button>
-            {!showNames && (
-              <wa-tooltip
-                for={`nav-tab-${item.id}`}
-                placement={orientation === 'vertical' ? 'right' : 'bottom'}
-              >
-                {item.label}
-              </wa-tooltip>
-            )}
           </>
         );
       })}

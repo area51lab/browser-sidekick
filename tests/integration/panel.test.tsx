@@ -131,7 +131,7 @@ describe('Panel', () => {
     expect(all.map((t) => t.getAttribute('aria-label'))).toEqual(['Alpha', 'Beta', 'Notes']);
     expect(all[2]!.className).toContain('nav-tab-notes');
     expect(all[0]!.getAttribute('aria-selected')).toBe('true');
-    expect(host.querySelectorAll('wa-tooltip')).toHaveLength(3);
+    expect(all.map((t) => t.getAttribute('title'))).toEqual(['Alpha', 'Beta', 'Notes']);
     expect(host.querySelector('img')!.getAttribute('src')).toBe('https://b.test/f.png');
 
     await settle(() => all[1]!.click());
@@ -142,12 +142,12 @@ describe('Panel', () => {
   it('top bar shows names or icons depending on settings', async () => {
     const names = await setup({ navigationMode: 'top-bar', topBarDisplay: 'names' });
     expect(names.host.querySelector('.nav-label')!.textContent).toBe('Alpha');
-    expect(names.host.querySelectorAll('wa-tooltip')).toHaveLength(0);
+    expect(names.host.querySelector('[role="tab"]')!.hasAttribute('title')).toBe(false);
     names.unmount();
     const icons = await setup({ navigationMode: 'top-bar', topBarDisplay: 'icons' });
     cleanup = icons.unmount;
     expect(icons.host.querySelector('.nav-label')).toBeNull();
-    expect(icons.host.querySelectorAll('wa-tooltip')).toHaveLength(3);
+    expect(icons.host.querySelectorAll('[role="tab"][title]')).toHaveLength(3);
   });
 
   it('supports arrow, Home and End keys with roving tabindex', async () => {

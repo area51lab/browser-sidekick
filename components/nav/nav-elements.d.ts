@@ -7,7 +7,6 @@ declare module 'preact' {
     interface IntrinsicElements {
       'wa-select': ElementProps & { value?: string };
       'wa-option': ElementProps & { value?: string };
-      'wa-tooltip': ElementProps & { for?: string; placement?: string };
     }
   }
 }
