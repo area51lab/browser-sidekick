@@ -9,7 +9,7 @@ export default defineConfig({
     description: 'Side panel with your favorite websites and notes',
     action: { default_title: DISPLAY_NAME },
     permissions: ['storage', 'declarativeNetRequest', 'webNavigation'],
-    optional_host_permissions: ['https://*/*', 'http://*/*'],
+    optional_host_permissions: ['<all_urls>'],
     ...(browser === 'firefox' && {
       browser_specific_settings: {
         gecko: {

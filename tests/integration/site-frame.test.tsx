@@ -181,6 +181,22 @@ describe('SiteFrame access', () => {
     });
     await flush();
     expect(status()).toBe('no-access');
+    expect(host.textContent).toContain('Access was not granted');
+  });
+
+  it('shows the denied message when the permission request throws', async () => {
+    perms.has.mockResolvedValue(false);
+    perms.ensure.mockRejectedValue(new Error('not a subset of optional permissions'));
+    await act(async () => {
+      render(<SiteFrame url="https://a.com/" />, host);
+    });
+    await flush();
+    await act(async () => {
+      (host.querySelector('wa-button') as HTMLElement).click();
+    });
+    await flush();
+    expect(status()).toBe('no-access');
+    expect(host.textContent).toContain('Access was not granted');
   });
 
   it('ignores a permission result that arrives after unmount', async () => {

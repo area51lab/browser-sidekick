@@ -30,6 +30,7 @@ export function SiteFrame(props: SiteFrameProps) {
 function SiteFrameView({ url, title, timeoutMs = FRAME_LOAD_TIMEOUT_MS }: SiteFrameProps) {
   const [status, setStatus] = useState<FrameStatus>('loading');
   const [attempt, setAttempt] = useState(0);
+  const [denied, setDenied] = useState(false);
   const frame = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -56,7 +57,12 @@ function SiteFrameView({ url, title, timeoutMs = FRAME_LOAD_TIMEOUT_MS }: SiteFr
   };
 
   const grantAccess = async () => {
-    if (!(await ensureSitePermission(url))) return;
+    const granted = await ensureSitePermission(url).catch(() => false);
+    if (!granted) {
+      setDenied(true);
+      return;
+    }
+    setDenied(false);
     setStatus('loading');
     setAttempt((n) => n + 1);
   };
@@ -72,6 +78,7 @@ function SiteFrameView({ url, title, timeoutMs = FRAME_LOAD_TIMEOUT_MS }: SiteFr
               <wa-button variant="brand" onClick={() => void grantAccess()}>
                 Grant access
               </wa-button>
+              {denied && <p>Access was not granted. Try again or use "Open in tab".</p>}
             </>
           ) : (
             <p>This site refuses to be embedded.</p>
