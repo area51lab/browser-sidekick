@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import {
+  isNotes,
+  isSite,
+  isTabState,
+  parseNotes,
+  parseSettings,
+  parseSites,
+  parseTabState,
+} from '../../lib/storage/guards';
+import { DEFAULT_NOTES, DEFAULT_SETTINGS, defaultTabState } from '../../lib/storage/types';
+
+const site = { id: 'a', url: 'https://a.test', title: 'A', createdAt: 1 };
+
+describe('guards', () => {
+  it('validates sites', () => {
+    expect(isSite(site)).toBe(true);
+    expect(isSite({ ...site, customName: 'x', faviconUrl: 'y' })).toBe(true);
+    expect(isSite({ ...site, customName: 3 })).toBe(false);
+    expect(isSite({ ...site, faviconUrl: 3 })).toBe(false);
+    expect(isSite({ ...site, createdAt: '1' })).toBe(false);
+    expect(isSite({ ...site, id: 1 })).toBe(false);
+    expect(isSite(null)).toBe(false);
+    expect(isSite([site])).toBe(false);
+  });
+
+  it('validates notes and tab state', () => {
+    expect(isNotes({ markdown: '', updatedAt: 0 })).toBe(true);
+    expect(isNotes({ markdown: 1, updatedAt: 0 })).toBe(false);
+    expect(isTabState({ tabId: 1, activeItemId: 'a', urlBySiteId: { a: 'u' } })).toBe(true);
+    expect(isTabState({ tabId: 1, activeItemId: 'a', urlBySiteId: { a: 1 } })).toBe(false);
+    expect(isTabState({ tabId: 1, activeItemId: 'a', urlBySiteId: [] })).toBe(false);
+    expect(isTabState({ tabId: '1', activeItemId: 'a', urlBySiteId: {} })).toBe(false);
+  });
+
+  it('parses sites dropping invalid entries', () => {
+    expect(parseSites([site, { bad: true }])).toEqual([site]);
+    expect(parseSites(undefined)).toEqual([]);
+  });
+
+  it('parses settings field by field with defaults', () => {
+    expect(parseSettings(undefined)).toEqual(DEFAULT_SETTINGS);
+    expect(parseSettings({ navigationMode: 'top-bar', topBarDisplay: 'nope' })).toEqual({
+      ...DEFAULT_SETTINGS,
+      navigationMode: 'top-bar',
+    });
+    expect(parseSettings({ persistence: 'configured-url' }).persistence).toBe('configured-url');
+  });
+
+  it('falls back for notes and tab state', () => {
+    expect(parseNotes(null)).toBe(DEFAULT_NOTES);
+    expect(parseNotes({ markdown: 'x', updatedAt: 2 })).toEqual({ markdown: 'x', updatedAt: 2 });
+    expect(parseTabState(7)(undefined)).toEqual(defaultTabState(7));
+    const state = { tabId: 7, activeItemId: 'a', urlBySiteId: {} };
+    expect(parseTabState(7)(state)).toBe(state);
+  });
+});

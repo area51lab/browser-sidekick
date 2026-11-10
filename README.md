@@ -41,7 +41,9 @@ entrypoints/
   options/            options page
 components/           shared Preact components
 lib/                  shared helpers (theme, mounting)
+lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
 assets/base.css       base stylesheet and Web Awesome theme
+tests/helpers/        test utilities (fake storage adapter)
 tests/unit/           unit tests
 tests/integration/    integration tests
 ```
