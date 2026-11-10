@@ -42,6 +42,8 @@ entrypoints/
 components/           shared Preact components
 lib/                  shared helpers (theme, mounting)
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
+lib/siteMetadata.ts   title and favicon fetching, URL normalization
+lib/requestOrigin.ts  host permission request for a site origin
 assets/base.css       base stylesheet and Web Awesome theme
 tests/helpers/        test utilities (fake storage adapter)
 tests/unit/           unit tests
@@ -52,7 +54,7 @@ tests/integration/    integration tests
 
 - Add `declarativeNetRequest` and host permissions once embedding sites in iframes is implemented
 - Add a Firefox gecko extension id before publishing
-- Site list, add-site form and favicon/title fetching
+- Declare `optional_host_permissions` (http(s) origins) so `requestOrigin` can prompt in Chrome
 - Navigation modes: dropdown, icon sidebar, top bar
 - Per-tab state with "remember last URL" or "always reset"
 - Notes tab with markdown (marked + DOMPurify)

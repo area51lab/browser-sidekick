@@ -1,4 +1,9 @@
-import { Hello } from '../../components/Hello';
+import { SitesSection } from '../../components/SitesSection';
 import { mount } from '../../lib/mount';
 
-mount(<Hello surface="options page" />);
+mount(
+  <main class="surface">
+    <h1>sidekick</h1>
+    <SitesSection />
+  </main>,
+);
