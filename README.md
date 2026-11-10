@@ -42,7 +42,9 @@ entrypoints/
 components/           shared Preact components (SiteFrame: iframe with refusal fallback)
 lib/                  shared helpers (theme, mounting)
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
-lib/embedding/    DNR rule builder, rule sync and site permission helper
+lib/embedding/       DNR rule builder, rule sync and site permission helper
+lib/siteMetadata.ts   title and favicon fetching, URL normalization
+lib/requestOrigin.ts  host permission request for a site origin
 assets/base.css       base stylesheet and Web Awesome theme
 tests/helpers/        test utilities (fake storage adapter)
 tests/unit/           unit tests
@@ -69,7 +71,6 @@ Sites are shown in an iframe, and most sites forbid that with `X-Frame-Options` 
 ## TODO
 
 - Add a Firefox gecko extension id before publishing
-- Site list, add-site form and favicon/title fetching
 - Navigation modes: dropdown, icon sidebar, top bar
 - Per-tab state with "remember last URL" or "always reset"
 - Notes tab with markdown (marked + DOMPurify)
