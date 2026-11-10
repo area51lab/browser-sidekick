@@ -112,6 +112,17 @@ describe('Panel', () => {
     },
   );
 
+  it('dropdown ignores empty and unchanged selections', async () => {
+    const { host, store, unmount } = await setup({ navigationMode: 'dropdown' });
+    cleanup = unmount;
+    const select = host.querySelector('wa-select') as HTMLElement & { value: string };
+    select.value = '';
+    await settle(() => select.dispatchEvent(new Event('change')));
+    select.value = 'a';
+    await settle(() => select.dispatchEvent(new Event('change')));
+    expect((await store.tabState(1).get()).activeItemId).toBe('');
+  });
+
   it('dropdown lists all items and switches on change', async () => {
     const { host, store, unmount } = await setup({ navigationMode: 'dropdown' });
     cleanup = unmount;
