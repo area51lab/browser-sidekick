@@ -3,7 +3,12 @@ import { act } from 'preact/test-utils';
 import { render } from 'preact';
 
 const create = vi.hoisted(() => vi.fn());
+const perms = vi.hoisted(() => ({ has: vi.fn(), ensure: vi.fn() }));
 vi.mock('wxt/browser', () => ({ browser: { tabs: { create } } }));
+vi.mock('../../lib/embedding/permissions', () => ({
+  hasSitePermission: perms.has,
+  ensureSitePermission: perms.ensure,
+}));
 
 vi.mock('@awesome.me/webawesome/dist/components/button/button.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/spinner/spinner.js', () => ({}));
@@ -12,11 +17,17 @@ import { SiteFrame, isBlankFrame } from '../../components/SiteFrame';
 
 let host: HTMLElement;
 
+const flush = () =>
+  act(async () => {
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  });
 const status = () => host.querySelector('.site-frame')?.getAttribute('data-status');
 const frame = () => host.querySelector('iframe') as HTMLIFrameElement;
 
 beforeEach(() => {
   vi.useFakeTimers();
+  perms.has.mockResolvedValue(true);
+  perms.ensure.mockResolvedValue(true);
   host = document.createElement('div');
 });
 
@@ -122,6 +133,70 @@ describe('SiteFrame', () => {
     });
     expect(status()).toBe('loading');
     expect(frame().getAttribute('src')).toBe('https://b.com/');
+  });
+});
+
+describe('SiteFrame access', () => {
+  it('shows the missing-permission reason with a grant action', async () => {
+    perms.has.mockResolvedValue(false);
+    await act(async () => {
+      render(<SiteFrame url="https://mail.a.com/" />, host);
+    });
+    await flush();
+    expect(status()).toBe('no-access');
+    expect(host.textContent).toContain('does not have access');
+    expect(host.textContent).not.toContain('refuses to be embedded');
+    expect(host.querySelector('iframe')).toBeNull();
+    const buttons = host.querySelectorAll('wa-button');
+    expect(buttons).toHaveLength(2);
+    (buttons[1] as HTMLElement).click();
+    expect(create).toHaveBeenCalledWith({ url: 'https://mail.a.com/' });
+  });
+
+  it('reloads the frame after access is granted', async () => {
+    perms.has.mockResolvedValue(false);
+    await act(async () => {
+      render(<SiteFrame url="https://a.com/" />, host);
+    });
+    await flush();
+    perms.has.mockResolvedValue(true);
+    await act(async () => {
+      (host.querySelector('wa-button') as HTMLElement).click();
+    });
+    await flush();
+    expect(perms.ensure).toHaveBeenCalledWith('https://a.com/');
+    expect(status()).toBe('loading');
+    expect(frame().getAttribute('src')).toBe('https://a.com/');
+  });
+
+  it('stays on the prompt when the grant is denied', async () => {
+    perms.has.mockResolvedValue(false);
+    perms.ensure.mockResolvedValue(false);
+    await act(async () => {
+      render(<SiteFrame url="https://a.com/" />, host);
+    });
+    await flush();
+    await act(async () => {
+      (host.querySelector('wa-button') as HTMLElement).click();
+    });
+    await flush();
+    expect(status()).toBe('no-access');
+  });
+
+  it('ignores a permission result that arrives after unmount', async () => {
+    let resolve!: (v: boolean) => void;
+    perms.has.mockReturnValue(new Promise<boolean>((r) => (resolve = r)));
+    await act(async () => {
+      render(<SiteFrame url="https://a.com/" />, host);
+    });
+    await flush();
+    await act(() => {
+      render(null, host);
+    });
+    await act(() => {
+      resolve(false);
+    });
+    expect(host.querySelector('.site-frame')).toBeNull();
   });
 });
 

@@ -20,7 +20,7 @@ From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpac
 
 - All data (sites, notes, settings) stays in your browser's extension storage on your device. Nothing is sent to any server run by sidekick.
 - No analytics, telemetry or tracking.
-- No host access is granted at install. Access to a site is requested only when you add it, and only for that site's origin.
+- No host access is granted at install. Access to a site is requested only when you add it, and only for that site's parent domain and its subdomains (for example `*.proton.me` and `proton.me` for `mail.proton.me`).
 - The only network requests are the ones your browser makes to load the sites you added (including fetching their title and icon).
 - The `webNavigation` permission is used to remember the last URL of each site and grants no page content access. The `declarativeNetRequest` permission is used to remove framing-blocking headers for your sites inside the panel only.
 
@@ -98,10 +98,10 @@ Run once in Chrome and once in Firefox after loading the build.
 
 Sites are shown in an iframe, and most sites forbid that with `X-Frame-Options` or a CSP `frame-ancestors` directive. `lib/embedding/` builds `declarativeNetRequest` dynamic rules that remove those response headers.
 
-- One rule per unique site host (subdomains included, ports ignored), only for `sub_frame` requests initiated by the extension itself (`initiatorDomains`), never global. Rule ids are derived from the host, so they are stable.
+- One rule per unique parent domain (subdomains included, ports ignored), so a redirect such as `mail.proton.me` to `account.proton.me` keeps the headers stripped. The parent domain is a heuristic without a public suffix list: the last two labels, or three for a short list of common two-level suffixes (`co.uk`, `com.br`, `com.au`...). IPs and `localhost` stay exact. Rules apply only for `sub_frame` requests initiated by the extension itself (`initiatorDomains`), never global. Rule ids are derived from the host, so they are stable.
 - `syncEmbeddingRules(sites)` replaces all dynamic rules. `startEmbeddingSync()` (called from the background) syncs on start and whenever the raw `sites` key of `storage.local` changes. The only coupling with the storage layer is that key holding an array of objects with a string `url`.
-- Only `storage` and `declarativeNetRequest` are required. Host access is requested per site with `ensureSitePermission(url)`, which calls `permissions.request` for the site origin and must run in a user gesture (the add-site submit). Origins are declared as `optional_host_permissions` (`http://*/*`, `https://*/*`), so nothing is granted at install.
-- `SiteFrame` shows a spinner while loading and, if the frame errors, loads blank or does not load within 10 seconds, a "This site refuses to be embedded" message with an "Open in tab" button.
+- Only `storage` and `declarativeNetRequest` are required. Host access is requested per site with `ensureSitePermission(url)`, which calls `permissions.request` for `*://*.parent/*` plus `*://parent/*` and must run in a user gesture (the add-site submit or the "Grant access" button). Origins are declared as `optional_host_permissions` (`http://*/*`, `https://*/*`), so nothing is granted at install.
+- `SiteFrame` shows a spinner while loading and, if the frame errors, loads blank or does not load within 10 seconds, a "This site refuses to be embedded" message with an "Open in tab" button. When access to the site's parent domain is missing (for example sites saved before the parent-domain scope), it instead shows "Sidekick does not have access to this site" with a "Grant access" button that requests the permission and reloads the frame, plus "Open in tab".
 
 ### Embedding limits
 
@@ -109,6 +109,9 @@ Sites are shown in an iframe, and most sites forbid that with `X-Frame-Options` 
 - Firefox supports `modifyHeaders` in MV3 since Firefox 128; older versions are not supported and no `webRequest` blocking fallback is shipped. Firefox also grants optional host permissions only after a user gesture, same as Chrome.
 - Sites that detect framing in JavaScript (frame busters, `top !== self` checks) still refuse or break.
 - Third-party cookies: embedded sites are third-party in the extension page, so `SameSite=Lax/Strict` cookies are not sent and logins may not persist; browsers that block third-party cookies break them entirely.
+- Redirects across different registrable domains (for example a login on another domain) are not covered, since the permission and rules stop at the parent domain of the saved site.
+- Proton-like apps: besides framing headers, they may rely on third-party cookies (the account host sets cookies in an extension-origin frame, so `SameSite=Lax/Strict` cookies are dropped and Chrome's third-party cookie blocking can break sign-in), on JavaScript framing checks, and on `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers. Only `X-Frame-Options` and CSP are stripped; if login still fails after access is granted, use "Open in tab". This was reasoned from the code and headers, not verified against Proton itself.
+- No Chromium e2e covers the cross-host redirect: `modifyHeaders` needs a real host permission and `permissions.request` cannot be accepted in a headless run, so the redirect scope is covered by unit and integration tests.
 - A refused frame cannot be told apart from a slow site, so the fallback relies on a load timeout.
 
 ## Per-tab state

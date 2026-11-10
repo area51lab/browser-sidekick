@@ -44,7 +44,7 @@ vi.mock('wxt/browser', () => ({
 }));
 
 import { browser } from 'wxt/browser';
-import { ensureSitePermission } from '../../lib/embedding/permissions';
+import { ensureSitePermission, hasSitePermission } from '../../lib/embedding/permissions';
 import { startEmbeddingSync, syncEmbeddingRules } from '../../lib/embedding/sync';
 
 const hosts = () => state.rules.length;
@@ -138,8 +138,27 @@ describe('ensureSitePermission', () => {
 
   it('requests the site origin otherwise', async () => {
     expect(await ensureSitePermission('https://a.com:81/x')).toBe(true);
-    expect(browser.permissions.request).toHaveBeenCalledWith({ origins: ['https://a.com/*'] });
+    expect(browser.permissions.request).toHaveBeenCalledWith({
+      origins: ['*://*.a.com/*', '*://a.com/*'],
+    });
     state.requestResult = false;
     expect(await ensureSitePermission('https://a.com/x')).toBe(false);
+  });
+});
+
+describe('hasSitePermission', () => {
+  it('is false for unsupported urls without asking the browser', async () => {
+    expect(await hasSitePermission('nope')).toBe(false);
+    expect(browser.permissions.contains).not.toHaveBeenCalled();
+  });
+
+  it('checks the parent domain patterns', async () => {
+    state.granted = true;
+    expect(await hasSitePermission('https://mail.a.com/')).toBe(true);
+    expect(browser.permissions.contains).toHaveBeenCalledWith({
+      origins: ['*://*.a.com/*', '*://a.com/*'],
+    });
+    state.granted = false;
+    expect(await hasSitePermission('https://mail.a.com/')).toBe(false);
   });
 });

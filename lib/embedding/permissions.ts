@@ -1,14 +1,21 @@
 import { browser } from 'wxt/browser';
-import { originPattern } from './rules';
+import { permissionPatterns } from './rules';
+
+/** True when the extension already has access to the site's parent domain. */
+export async function hasSitePermission(url: string): Promise<boolean> {
+  const origins = permissionPatterns(url);
+  if (!origins) return false;
+  return browser.permissions.contains({ origins });
+}
 
 /**
  * Must be called from a user gesture (for example the add-site submit
- * handler). Resolves true when the extension may access the site origin.
+ * handler or the "Grant access" button). Resolves true when the extension
+ * may access the site's parent domain and its subdomains.
  */
 export async function ensureSitePermission(url: string): Promise<boolean> {
-  const pattern = originPattern(url);
-  if (!pattern) return false;
-  const permissions = { origins: [pattern] };
-  if (await browser.permissions.contains(permissions)) return true;
-  return browser.permissions.request(permissions);
+  const origins = permissionPatterns(url);
+  if (!origins) return false;
+  if (await browser.permissions.contains({ origins })) return true;
+  return browser.permissions.request({ origins });
 }

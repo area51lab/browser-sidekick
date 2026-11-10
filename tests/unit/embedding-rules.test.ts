@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildEmbeddingRules,
-  originPattern,
+  parentDomain,
+  permissionPatterns,
   siteHost,
-  uniqueSiteHosts,
+  uniqueSiteDomains,
 } from '../../lib/embedding/rules';
 
 const EXT = 'abcdefghijklmnop';
@@ -25,25 +26,52 @@ describe('siteHost', () => {
   });
 });
 
-describe('originPattern', () => {
-  it('builds a match pattern for the origin', () => {
-    expect(originPattern('https://example.com:8080/a/b')).toBe('https://example.com/*');
-    expect(originPattern('http://example.com')).toBe('http://example.com/*');
+describe('parentDomain', () => {
+  it('keeps the last two labels', () => {
+    expect(parentDomain('mail.proton.me')).toBe('proton.me');
+    expect(parentDomain('a.b.Example.com')).toBe('example.com');
+    expect(parentDomain('example.com')).toBe('example.com');
   });
 
-  it('returns null for unsupported urls', () => {
-    expect(originPattern('ftp://example.com')).toBeNull();
-    expect(originPattern('nope')).toBeNull();
+  it('keeps three labels for common two-level suffixes', () => {
+    expect(parentDomain('www.bbc.co.uk')).toBe('bbc.co.uk');
+    expect(parentDomain('app.empresa.com.br')).toBe('empresa.com.br');
+    expect(parentDomain('x.y.com.au')).toBe('y.com.au');
+  });
+
+  it('leaves IPs, IPv6 and single-label hosts exact', () => {
+    expect(parentDomain('192.168.0.10')).toBe('192.168.0.10');
+    expect(parentDomain('localhost')).toBe('localhost');
+    expect(parentDomain('[::1]')).toBe('[::1]');
   });
 });
 
-describe('uniqueSiteHosts', () => {
-  it('dedupes by host, ignoring case, paths and ports, and sorts', () => {
+describe('permissionPatterns', () => {
+  it('covers the parent domain and its subdomains', () => {
+    expect(permissionPatterns('https://mail.proton.me:8080/a')).toEqual([
+      '*://*.proton.me/*',
+      '*://proton.me/*',
+    ]);
+  });
+
+  it('keeps exact hosts exact', () => {
+    expect(permissionPatterns('http://localhost:3000')).toEqual(['*://localhost/*']);
+    expect(permissionPatterns('http://127.0.0.1/')).toEqual(['*://127.0.0.1/*']);
+  });
+
+  it('returns null for unsupported urls', () => {
+    expect(permissionPatterns('ftp://example.com')).toBeNull();
+    expect(permissionPatterns('nope')).toBeNull();
+  });
+});
+
+describe('uniqueSiteDomains', () => {
+  it('dedupes by parent domain, ignoring case, paths and ports, and sorts', () => {
     expect(
-      uniqueSiteHosts([
+      uniqueSiteDomains([
         { url: 'https://b.com/x' },
         { url: 'https://A.com' },
-        { url: 'http://a.com:81/y' },
+        { url: 'http://mail.a.com:81/y' },
         { url: 'bad' },
       ]),
     ).toEqual(['a.com', 'b.com']);
@@ -51,14 +79,23 @@ describe('uniqueSiteHosts', () => {
 });
 
 describe('buildEmbeddingRules', () => {
-  const sites = [{ url: 'https://a.com/x' }, { url: 'https://b.com' }, { url: 'https://a.com/y' }];
+  it('scopes proton-like redirects to the parent domain', () => {
+    const rules = buildEmbeddingRules([{ url: 'https://mail.proton.me' }], EXT);
+    expect(rules.map((r) => r.condition.requestDomains)).toEqual([['proton.me']]);
+  });
+
+  const sites = [
+    { url: 'https://a.com/x' },
+    { url: 'https://b.com' },
+    { url: 'https://mail.a.com/y' },
+  ];
 
   it('returns no rules for no valid sites', () => {
     expect(buildEmbeddingRules([], EXT)).toEqual([]);
     expect(buildEmbeddingRules([{ url: 'bad' }], EXT)).toEqual([]);
   });
 
-  it('creates one rule per unique host', () => {
+  it('creates one rule per unique parent domain', () => {
     const rules = buildEmbeddingRules(sites, EXT);
     expect(rules).toHaveLength(2);
     expect(rules.map((r) => r.condition.requestDomains)).toEqual([['a.com'], ['b.com']]);
