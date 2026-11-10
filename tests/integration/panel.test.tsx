@@ -6,13 +6,28 @@ const openOptionsPage = vi.fn();
 vi.mock('@awesome.me/webawesome/dist/components/textarea/textarea.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/select/select.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/option/option.js', () => ({}));
-vi.mock('@awesome.me/webawesome/dist/components/button/button.js', () => ({}));
+for (const name of [
+  'button',
+  'radio-group',
+  'radio',
+  'switch',
+  'details',
+  'callout',
+  'input',
+  'spinner',
+]) {
+  vi.doMock(`@awesome.me/webawesome/dist/components/${name}/${name}.js`, () => ({}));
+}
 vi.mock('../../components/SiteView', () => ({
   SiteView: ({ url }: { url: string }) => <div class="site-view" data-url={url} />,
 }));
 vi.mock('wxt/browser', () => ({
   browser: {
-    runtime: { openOptionsPage, getURL: () => 'chrome-extension://x/' },
+    runtime: {
+      openOptionsPage,
+      getManifest: () => ({ version: '1.0.0' }),
+      getURL: () => 'chrome-extension://x/',
+    },
     storage: {},
     tabs: {},
     webNavigation: {
@@ -23,6 +38,7 @@ vi.mock('wxt/browser', () => ({
   },
 }));
 
+const { DISPLAY_NAME } = await import('../../lib/brand');
 const { Panel } = await import('../../entrypoints/sidepanel/Panel');
 const { createStore } = await import('../../lib/storage/store');
 const { DEFAULT_SETTINGS } = await import('../../lib/storage/types');
@@ -65,6 +81,9 @@ async function setup(settings: Partial<Settings>, initialSites: Site[] = sites, 
   await flush();
   return { host, store, unmount: () => act(() => render(null, host)) };
 }
+
+const cog = (host: HTMLElement) =>
+  host.querySelector<HTMLButtonElement>('button[aria-label="Settings"]')!;
 
 const frames = (host: HTMLElement) => Array.from(host.querySelectorAll('.site-view'));
 const hiddenOf = (el: Element) => el.closest('.panel-item')!.hasAttribute('hidden');
@@ -262,4 +281,26 @@ describe('Panel', () => {
     cleanup = () => act(() => render(null, host));
     expect(frames(host)[0]!.getAttribute('data-url')).toBe(expected);
   });
+
+  it.each<NavigationMode>(['dropdown', 'icon-sidebar', 'top-bar'])(
+    'opens settings in the panel from the %s cog and returns to the sites',
+    async (mode) => {
+      const { host, unmount } = await setup({ navigationMode: mode });
+      cleanup = unmount;
+      expect(host.querySelector('nav')!.contains(cog(host))).toBe(true);
+      expect(host.querySelector('.panel-settings')).toBeNull();
+
+      await settle(() => cog(host).click());
+      const settings = host.querySelector('.panel-settings')!;
+      expect(settings.querySelector('h1')!.textContent).toBe(DISPLAY_NAME);
+      expect(host.querySelector('.panel-sites')!.hasAttribute('hidden')).toBe(true);
+      expect(frames(host)).toHaveLength(1);
+
+      const back = host.querySelector<HTMLButtonElement>('.settings-back')!;
+      await settle(() => back.click());
+      expect(host.querySelector('.panel-settings')).toBeNull();
+      expect(host.querySelector('.panel-sites')!.hasAttribute('hidden')).toBe(false);
+      expect(frames(host)).toHaveLength(1);
+    },
+  );
 });

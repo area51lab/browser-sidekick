@@ -1,4 +1,4 @@
-# sidekick
+# SideKick 🦾
 
 A browser side panel for your favorite websites and notes, for Chrome and Firefox (Manifest V3). Built with WXT, Preact, TypeScript and Web Awesome.
 
@@ -8,13 +8,18 @@ From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpac
 
 ## Using sidekick
 
-- **Open the panel**: click the sidekick toolbar icon. Chrome opens the side panel; Firefox toggles the sidebar.
-- **Add a site**: open the options page, type an address under Sites and press "Add site". The browser asks for access to that one site only; sidekick uses it to read the site's name and icon and to let it be shown in the panel. If the details cannot be loaded, the site is still saved with its hostname and `/favicon.ico`. You can rename, reorder, edit and delete sites later.
+- **Open the panel**: click the SideKick toolbar icon. Chrome opens the side panel; Firefox toggles the sidebar.
+- **Add a site**: open the options page, type an address under Sites and press "Add site". The browser asks for access to that one site only; sidekick uses it to read the site's name and icon and to let it be shown in the panel. If the details cannot be loaded, the site is still saved with its hostname and `/favicon.ico`. You can rename, edit and delete sites later, and reorder them by dragging a row (the ↑ / ↓ buttons remain as the keyboard-accessible alternative).
+- **Settings in the panel**: the cog button (right end of the top bar and dropdown, bottom of the icon sidebar) opens the same settings as the options page inside the panel, with a "Back to sites" button. The options page also works standalone.
 - **Navigation mode**: in the options General section choose a dropdown, an icon sidebar or a top bar (icons or names). An open panel updates live.
 - **Persistence**: with "Remember last URL" a site reopens where you left it in that browser tab; with "Always return to configured URL" it always starts from its saved address.
 - **Notes**: the Notes item holds markdown notes that autosave, with an edit and preview toggle. Previews are sanitized.
 - **Theme**: the panel follows the browser light/dark preference. "Use browser theme colors" (on by default) also applies Firefox theme colors, or system colors on Chrome.
 - Some sites refuse to be embedded; the panel then offers "Open in tab". See the known limits below.
+
+## Branding
+
+The display name is "SideKick 🦾" (`DISPLAY_NAME` in `lib/brand.ts`, the single source of truth). It is used for the panel and options titles, the options heading, the About section and the toolbar tooltip. The manifest `name` stays the plain `APP_NAME` ("SideKick") because emoji in the manifest name risk store review rejection. The two HTML `<title>` tags repeat the display name as static text; a unit test keeps them in sync.
 
 ## Privacy
 

@@ -21,6 +21,7 @@ vi.doMock('wxt/browser', () => ({
 
 const { SettingsPage } = await import('../../components/settings/SettingsPage');
 const { AboutSection, SOURCE_URL } = await import('../../components/settings/AboutSection');
+const { DISPLAY_NAME } = await import('../../lib/brand');
 const { createStore } = await import('../../lib/storage');
 const { createFakeAdapter } = await import('../helpers/fakeStorage');
 
@@ -72,6 +73,19 @@ describe('options page', () => {
     expect(group('navigationMode')?.getAttribute('label')).toBe('Navigation');
     expect(group('persistence')?.getAttribute('label')).toBe('When opening a site');
     expect(group('navigationMode')?.querySelectorAll('wa-radio')).toHaveLength(3);
+  });
+
+  it('shows the display name heading and no back button standalone', async () => {
+    await mountNode(<SettingsPage store={newStore()} />);
+    expect(host.querySelector('h1')?.textContent).toBe(DISPLAY_NAME);
+    expect(host.querySelector('.settings-back')).toBeNull();
+  });
+
+  it('shows a back button when embedded', async () => {
+    const onBack = vi.fn();
+    await mountNode(<SettingsPage store={newStore()} onBack={onBack} />);
+    act(() => host.querySelector<HTMLButtonElement>('.settings-back')!.click());
+    expect(onBack).toHaveBeenCalled();
   });
 
   it('reflects stored settings', async () => {
@@ -166,7 +180,7 @@ describe('options page', () => {
 describe('about section', () => {
   it('shows the manifest version and source link', async () => {
     await mountNode(<AboutSection />);
-    expect(host.textContent).toContain('9.8.7');
+    expect(host.textContent).toContain(`${DISPLAY_NAME} version 9.8.7`);
     expect(host.querySelector('a')?.getAttribute('href')).toBe(SOURCE_URL);
   });
 

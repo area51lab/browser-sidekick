@@ -4,10 +4,6 @@
   height: 100vh;
 }
 
-.panel-icon-sidebar {
-  flex-direction: row;
-}
-
 .panel-content {
   flex: 1;
   min-width: 0;
@@ -35,6 +31,32 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--wa-space-m);
-  padding: var(--wa-space-l);
+  gap: var(--wa-space-s);
+  padding: var(--wa-space-s);
+}
+
+.panel-sites {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.panel-sites[hidden] {
+  display: none;
+}
+
+.panel-icon-sidebar {
+  flex-direction: row;
+}
+
+.panel-settings {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.panel-settings .settings-page {
+  gap: var(--wa-space-l);
+  padding: var(--wa-space-s);
 }

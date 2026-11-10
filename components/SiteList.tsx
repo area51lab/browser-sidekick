@@ -14,11 +14,24 @@ export interface SiteListProps {
 export function SiteList({ store, onEdit, onRemove }: SiteListProps) {
   const sites = useSites(store);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
 
   if (sites.ready && sites.value.length === 0) return <p>No sites yet. Add one above.</p>;
 
   const move = (site: Site, index: number) =>
     sites.update((current) => reorderSites(current, site.id, index));
+
+  const endDrag = () => {
+    setDragId(null);
+    setOverIndex(null);
+  };
+
+  const drop = (index: number) => {
+    const id = dragId;
+    endDrag();
+    if (id) void sites.update((current) => reorderSites(current, id, index));
+  };
 
   const remove = async (site: Site) => {
     await sites.update((current) => removeSite(current, site.id));
@@ -29,7 +42,31 @@ export function SiteList({ store, onEdit, onRemove }: SiteListProps) {
   return (
     <ul class="site-list" aria-label="Sites">
       {sites.value.map((site, index) => (
-        <li class="site-row" key={site.id}>
+        <li
+          class={`site-row${dragId === site.id ? ' site-row--dragging' : ''}${
+            dragId && dragId !== site.id && overIndex === index ? ' site-row--over' : ''
+          }`}
+          key={site.id}
+          draggable
+          onDragStart={(event) => {
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer?.setData('text/plain', site.id);
+            setDragId(site.id);
+          }}
+          onDragOver={(event) => {
+            if (!dragId) return;
+            event.preventDefault();
+            setOverIndex(index);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            drop(index);
+          }}
+          onDragEnd={endDrag}
+        >
+          <span class="site-row__handle" aria-hidden="true" title="Drag to reorder">
+            ⠿
+          </span>
           <SiteIcon src={site.faviconUrl} />
           <div class="site-row__text">
             <strong>{displayName(site)}</strong>

@@ -66,3 +66,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.site-row[draggable='true'] {
+  cursor: grab;
+}
+
+.site-row--dragging {
+  opacity: 0.5;
+}
+
+.site-row--over {
+  box-shadow: 0 -2px 0 0 var(--wa-color-brand-fill-loud);
+}
+
+.site-row__handle {
+  color: var(--wa-color-text-quiet);
+  user-select: none;
+}
