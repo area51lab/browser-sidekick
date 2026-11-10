@@ -56,6 +56,8 @@ export function parseSettings(value: unknown): Settings {
     navigationMode: pick(NAVIGATION_MODES, raw.navigationMode, DEFAULT_SETTINGS.navigationMode),
     topBarDisplay: pick(TOP_BAR_DISPLAYS, raw.topBarDisplay, DEFAULT_SETTINGS.topBarDisplay),
     persistence: pick(PERSISTENCE_MODES, raw.persistence, DEFAULT_SETTINGS.persistence),
+    useBrowserThemeColors:
+      typeof raw.useBrowserThemeColors === 'boolean' ? raw.useBrowserThemeColors : true,
   };
 }
 

@@ -30,3 +30,54 @@
 .notes-preview pre {
   overflow-x: auto;
 }
+
+.notes-preview {
+  color: var(--wa-color-text-normal);
+}
+
+.notes-preview a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.notes-preview code,
+.notes-preview pre {
+  background: var(--wa-color-surface-lowered);
+  color: var(--wa-color-text-normal);
+  border-radius: var(--wa-border-radius-s);
+}
+
+.notes-preview code {
+  padding: 0.1em 0.3em;
+}
+
+.notes-preview pre {
+  padding: var(--wa-space-s);
+}
+
+.notes-preview pre code {
+  padding: 0;
+  background: none;
+}
+
+.notes-preview blockquote {
+  margin-inline: 0;
+  padding-inline-start: var(--wa-space-m);
+  border-inline-start: 3px solid var(--wa-color-surface-border);
+  color: var(--wa-color-text-quiet);
+}
+
+.notes-preview hr {
+  border: 0;
+  border-top: 1px solid var(--wa-color-surface-border);
+}
+
+.notes-preview table {
+  border-collapse: collapse;
+}
+
+.notes-preview th,
+.notes-preview td {
+  padding: var(--wa-space-2xs) var(--wa-space-xs);
+  border: 1px solid var(--wa-color-surface-border);
+}

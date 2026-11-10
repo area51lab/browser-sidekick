@@ -50,3 +50,17 @@ body {
   padding: 1rem;
   text-align: center;
 }
+
+html.sk-system-colors {
+  --wa-color-surface-default: Canvas;
+  --wa-color-surface-raised: Canvas;
+  --wa-color-surface-lowered: color-mix(in oklab, Canvas, CanvasText 6%);
+  --wa-color-text-normal: CanvasText;
+  --wa-color-text-quiet: color-mix(in oklab, CanvasText, Canvas 30%);
+  --wa-color-surface-border: color-mix(in oklab, Canvas, CanvasText 20%);
+  --wa-color-brand-fill-loud: AccentColor;
+  --wa-color-brand-on-loud: AccentColorText;
+  --wa-color-brand-fill-quiet: color-mix(in oklab, Canvas, AccentColor 18%);
+  --wa-color-brand-on-quiet: CanvasText;
+  --wa-color-brand-border-normal: AccentColor;
+}

@@ -40,6 +40,9 @@ describe('guards', () => {
 
   it('parses settings field by field with defaults', () => {
     expect(parseSettings(undefined)).toEqual(DEFAULT_SETTINGS);
+    expect(DEFAULT_SETTINGS.useBrowserThemeColors).toBe(true);
+    expect(parseSettings({ useBrowserThemeColors: false }).useBrowserThemeColors).toBe(false);
+    expect(parseSettings({ useBrowserThemeColors: 'no' }).useBrowserThemeColors).toBe(true);
     expect(parseSettings({ navigationMode: 'top-bar', topBarDisplay: 'nope' })).toEqual({
       ...DEFAULT_SETTINGS,
       navigationMode: 'top-bar',

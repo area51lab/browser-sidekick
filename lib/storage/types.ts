@@ -15,6 +15,7 @@ export interface Settings {
   navigationMode: NavigationMode;
   topBarDisplay: TopBarDisplay;
   persistence: Persistence;
+  useBrowserThemeColors?: boolean;
 }
 
 export interface TabState {
@@ -36,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   navigationMode: 'dropdown',
   topBarDisplay: 'icons',
   persistence: 'last-url',
+  useBrowserThemeColors: true,
 };
 
 export const DEFAULT_NOTES: Notes = { markdown: '', updatedAt: 0 };

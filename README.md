@@ -2,7 +2,7 @@
 
 A browser side panel for your favorite websites and notes. Built with WXT, Preact, TypeScript and Web Awesome for Chrome and Firefox (Manifest V3).
 
-This scaffold renders a "Hello sidekick" view with one Web Awesome component in the side panel and options page, following the system light/dark theme.
+This scaffold renders a "Hello sidekick" view with one Web Awesome component in the side panel and options page, following the system light/dark theme (see Theme).
 
 ## Requirements
 
@@ -41,6 +41,7 @@ entrypoints/
   options/            options page
 components/           shared Preact components (SiteFrame: iframe with refusal fallback)
 lib/                  shared helpers (theme, mounting)
+lib/theme/            color scheme, browser theme mapping and `useTheme()`
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
 lib/embedding/       DNR rule builder, rule sync and site permission helper
 lib/siteMetadata.ts   title and favicon fetching, URL normalization
@@ -92,3 +93,14 @@ Each browser tab has its own state in `storage.session` (`useTabState(tabId)`): 
 - Notes tab with markdown (marked + DOMPurify)
 - Follow browser theme colors where possible
 - Playwright smoke test
+
+## Theme
+
+`mount()` applies the Web Awesome `wa-dark` class from `prefers-color-scheme` before rendering (no flash) and `useTheme()` keeps it in sync live, so the side panel and the options page follow the browser light/dark preference.
+
+- Firefox: `lib/theme/` reads `browser.theme.getCurrent()` and subscribes to `browser.theme.onUpdated`. `mapBrowserTheme` maps popup, toolbar and frame colors (plus `popup_border`/`sidebar_border` and an accent from `icons_attention`, `tab_line` or `button_background_active`) to Web Awesome surface, text, border and brand tokens, set as inline custom properties on `<html>`. The last mapping is cached in `localStorage` so the first paint already matches.
+- Contrast safety: text and surface come from the first of popup, toolbar or frame whose pair meets WCAG AA (4.5:1). If none does, or a color is translucent or unparsable, the default Web Awesome tokens apply. Derived brand and muted-text tokens are skipped individually when they would fail AA.
+- Chrome has no theme color API, so the `sk-system-colors` class maps the tokens to CSS system colors (`Canvas`, `CanvasText`, `AccentColor`) with `color-scheme: light dark`.
+- `settings.useBrowserThemeColors` (optional boolean, default `true`): when `false`, neither Firefox colors nor system colors are applied and only the light/dark Web Awesome theme is used. The settings UI is rendered by another task.
+- API: `useTheme({ root?, store?, api? })` returns `{ scheme, source: 'default' | 'system' | 'browser', tokens }`. Pure helpers (`parseColor`, `contrastRatio`, `meetsAA`, `mapBrowserTheme`) are exported from `lib/theme`.
+- Notes preview HTML (sanitized by DOMPurify) is styled only with Web Awesome tokens, so code, quotes and tables stay readable in dark mode and with browser colors.
