@@ -5,3 +5,5 @@ node_modules
 *.log
 .cache/
 coverage
+test-results
+playwright-report
