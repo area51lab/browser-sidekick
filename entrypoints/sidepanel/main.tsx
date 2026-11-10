@@ -1,4 +1,4 @@
-import { Hello } from '../../components/Hello';
 import { mount } from '../../lib/mount';
+import { App } from './App';
 
-mount(<Hello surface="side panel" />);
+mount(<App />);
