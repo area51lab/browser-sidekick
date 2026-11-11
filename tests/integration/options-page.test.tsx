@@ -52,12 +52,29 @@ async function mountNode(node: preact.ComponentChild) {
   await flush();
 }
 
-const group = (name: string) =>
-  host.querySelector(`wa-radio-group[name="${name}"]`) as (HTMLElement & { value: string }) | null;
+const group = (name: string) => {
+  const preview = host.querySelector(`fieldset[data-name="${name}"]`);
+  if (preview) {
+    const checked = preview.querySelector<HTMLInputElement>('input:checked');
+    return {
+      value: checked?.value,
+      getAttribute: () => preview.querySelector('legend')?.textContent ?? null,
+      querySelectorAll: (selector: string) =>
+        preview.querySelectorAll(selector === 'wa-radio' ? 'input' : selector),
+    };
+  }
+  return host.querySelector(`wa-radio-group[name="${name}"]`) as
+    (HTMLElement & { value: string }) | null;
+};
 const choose = async (name: string, value: string) => {
-  const el = group(name)!;
-  el.value = value;
-  act(() => void el.dispatchEvent(new Event('change')));
+  const input = host.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`);
+  if (input) {
+    act(() => input.click());
+  } else {
+    const el = group(name) as HTMLElement & { value: string };
+    el.value = value;
+    act(() => void el.dispatchEvent(new Event('change')));
+  }
   await flush();
 };
 const themeSwitch = () =>

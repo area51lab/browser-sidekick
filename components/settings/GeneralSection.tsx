@@ -2,6 +2,8 @@ import '@awesome.me/webawesome/dist/components/switch/switch.js';
 import './settings.css';
 import { useSettings } from '../../lib/storage';
 import type { Settings, Store } from '../../lib/storage';
+import { PreviewField } from './PreviewField';
+import { NavigationPreview, TopBarPreview } from './Previews';
 import { RadioField } from './RadioField';
 import {
   NAVIGATION_CHOICES,
@@ -22,19 +24,21 @@ export function GeneralSection({ store }: GeneralSectionProps) {
   return (
     <section class="settings-section" aria-labelledby="general-heading" aria-busy={!ready}>
       <h2 id="general-heading">General</h2>
-      <RadioField
+      <PreviewField
         label="Navigation"
         name="navigationMode"
         value={settings.navigationMode}
         choices={NAVIGATION_CHOICES}
+        preview={(mode) => <NavigationPreview mode={mode} />}
         onChange={(navigationMode) => patch({ navigationMode })}
       />
       {showsTopBarDisplay(settings) && (
-        <RadioField
+        <PreviewField
           label="Top bar shows"
           name="topBarDisplay"
           value={settings.topBarDisplay}
           choices={TOP_BAR_CHOICES}
+          preview={(display) => <TopBarPreview display={display} />}
           onChange={(topBarDisplay) => patch({ topBarDisplay })}
         />
       )}
