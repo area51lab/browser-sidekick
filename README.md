@@ -4,7 +4,7 @@ A browser side panel for your favorite websites and notes, for Chrome and Firefo
 
 ## Install
 
-From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpacked (see [Load unpacked](#load-unpacked)). Store listings are not published yet.
+From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpacked (see [Load unpacked](#load-unpacked)). Store listings are not published yet; each GitHub release carries the store-ready archives.
 
 ## Using sidekick
 
@@ -172,6 +172,10 @@ Firefox-specific limits: see also the embedding and panel state sections above.
 - Firefox has no `openPanelOnActionClick`; the toolbar button toggles the sidebar through `sidebarAction.toggle()`.
 
 ## Packaging and bundle size
+
+### Releases
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please). Use Conventional Commits (`feat:`, `fix:`, ...) on `main`: the `Release` workflow keeps a release PR open with the version bump and `CHANGELOG.md`. Merging it creates the tag and GitHub release, and the same workflow then runs the checks and attaches `sidekick-<version>-chrome.zip`, `sidekick-<version>-firefox.zip` and `sidekick-<version>-sources.zip` to that release, ready to upload to the stores. Requirements: in the repository settings enable "Allow GitHub Actions to create and approve pull requests". PRs opened by `GITHUB_TOKEN` do not trigger `CI`; use a personal access token in the `release-please` step if checks must run on the release PR.
 
 `pnpm zip` builds `.output/sidekick-<version>-chrome.zip`; `pnpm zip:firefox` builds `sidekick-<version>-firefox.zip` and `sidekick-<version>-sources.zip` (required by AMO).
 
