@@ -42,7 +42,10 @@ async function mountNode(node: preact.ComponentChild) {
 const names = () => [...host.querySelectorAll('.site-row strong')].map((el) => el.textContent);
 const button = (label: string, within: ParentNode = host) =>
   [...within.querySelectorAll('wa-button')].find(
-    (el) => el.textContent === label || el.getAttribute('aria-label') === label,
+    (el) =>
+      el.textContent === label ||
+      el.getAttribute('aria-label') === label ||
+      el.getAttribute('aria-label')?.startsWith(`${label} `),
   ) as HTMLElement;
 const row = (index: number) => host.querySelectorAll('.site-row')[index] as HTMLElement;
 const click = async (el: HTMLElement) => {
@@ -66,19 +69,6 @@ describe('SiteList', () => {
     expect(row(0).querySelector('img')?.getAttribute('src')).toBe('https://a.test/i.png');
     expect(row(1).querySelector('[data-testid="site-icon-empty"]')).not.toBeNull();
     expect(row(1).textContent).toContain('https://b.test/');
-  });
-
-  it('reorders with up and down and disables the edges', async () => {
-    const store = newStore([make('a'), make('b'), make('c')]);
-    await mountNode(<SiteList store={store} />);
-    expect(button('Move A up').hasAttribute('disabled')).toBe(true);
-    expect(button('Move C down').hasAttribute('disabled')).toBe(true);
-
-    await click(button('Move C up'));
-    expect(names()).toEqual(['A', 'C', 'B']);
-    await click(button('Move A down'));
-    expect(names()).toEqual(['C', 'A', 'B']);
-    expect((await store.sites.get()).map((s) => s.id)).toEqual(['c', 'a', 'b']);
   });
 
   describe('drag and drop', () => {
@@ -185,7 +175,7 @@ describe('SitesSection', () => {
     expect(host.querySelector('form')?.getAttribute('aria-label')).toBe('Add site');
 
     await click(button('Edit'));
-    expect(host.querySelector('form')?.getAttribute('aria-label')).toBe('Edit site');
+    expect(host.querySelector('form[aria-label="Edit site"]')).not.toBeNull();
     expect(input('url').value).toBe('https://a.test/');
 
     act(() => {
@@ -202,17 +192,18 @@ describe('SitesSection', () => {
     expect(host.querySelector('form')?.getAttribute('aria-label')).toBe('Add site');
   });
 
-  it('leaves edit mode when the edited site is deleted but not when another is', async () => {
+  it('edits in place of the row and keeps editing when another site is deleted', async () => {
     const store = newStore([make('a'), make('b')]);
     await mountNode(<SitesSection {...props(store)} />);
 
     await click(button('Edit', row(0)));
+    expect(row(0).querySelector('form[aria-label="Edit site"]')).not.toBeNull();
     await click(button('Delete', row(1)));
     await click(button('Confirm', row(1)));
-    expect(host.querySelector('form')?.getAttribute('aria-label')).toBe('Edit site');
+    expect(host.querySelector('form[aria-label="Edit site"]')).not.toBeNull();
 
-    await click(button('Delete', row(0)));
-    await click(button('Confirm', row(0)));
-    expect(host.querySelector('form')?.getAttribute('aria-label')).toBe('Add site');
+    await click(button('Cancel', row(0)));
+    expect(host.querySelector('form[aria-label="Edit site"]')).toBeNull();
+    expect(host.querySelector('form[aria-label="Add site"]')).not.toBeNull();
   });
 });

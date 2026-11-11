@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useState } from 'preact/hooks';
 import type { Entry } from './entry';
 import { getStore } from './store';
 import type { Store } from './store';
-import { DEFAULT_NOTES, DEFAULT_SETTINGS, defaultTabState } from './types';
-import type { Notes, Settings, Site, TabState } from './types';
+import { DEFAULT_NOTES, DEFAULT_SETTINGS, defaultPanelState } from './types';
+import type { Notes, Settings, PanelState, Site } from './types';
 
 export interface StorageState<T> {
   value: T;
@@ -45,8 +45,7 @@ export const useSettings = (store: Store = getStore()): StorageState<Settings> =
 export const useNotes = (store: Store = getStore()): StorageState<Notes> =>
   useEntry(store.notes, DEFAULT_NOTES);
 
-export function useTabState(tabId: number, store: Store = getStore()): StorageState<TabState> {
-  const entry = useMemo(() => store.tabState(tabId), [store, tabId]);
-  const initial = useMemo(() => defaultTabState(tabId), [tabId]);
-  return useEntry(entry, initial);
-}
+const DEFAULT_PANEL_STATE = defaultPanelState();
+
+export const usePanelState = (store: Store = getStore()): StorageState<PanelState> =>
+  useEntry(store.panelState, DEFAULT_PANEL_STATE);

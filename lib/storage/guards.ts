@@ -4,9 +4,9 @@ import {
   NAVIGATION_MODES,
   PERSISTENCE_MODES,
   TOP_BAR_DISPLAYS,
-  defaultTabState,
+  defaultPanelState,
 } from './types';
-import type { Notes, Settings, Site, TabState } from './types';
+import type { Notes, Settings, PanelState, Site } from './types';
 
 type Raw = Record<string, unknown>;
 
@@ -37,10 +37,9 @@ export function isNotes(value: unknown): value is Notes {
   );
 }
 
-export function isTabState(value: unknown): value is TabState {
+export function isPanelState(value: unknown): value is PanelState {
   return (
     isRecord(value) &&
-    typeof value.tabId === 'number' &&
     typeof value.activeItemId === 'string' &&
     isRecord(value.urlBySiteId) &&
     Object.values(value.urlBySiteId).every((url) => typeof url === 'string')
@@ -63,7 +62,5 @@ export function parseSettings(value: unknown): Settings {
 
 export const parseNotes = (value: unknown): Notes => (isNotes(value) ? value : DEFAULT_NOTES);
 
-export const parseTabState =
-  (tabId: number) =>
-  (value: unknown): TabState =>
-    isTabState(value) ? value : defaultTabState(tabId);
+export const parsePanelState = (value: unknown): PanelState =>
+  isPanelState(value) ? value : defaultPanelState();

@@ -11,7 +11,7 @@ import {
   resolveInitialUrl,
   useSettings,
   useSites,
-  useTabState,
+  usePanelState,
   withActiveItem,
 } from '../../lib/storage';
 import type { Store } from '../../lib/storage';
@@ -21,28 +21,27 @@ import '../../components/nav/nav.css';
 import './panel.css';
 
 export interface PanelProps {
-  tabId: number;
   store?: Store;
 }
 
-export function Panel({ tabId, store }: PanelProps) {
+export function Panel({ store }: PanelProps) {
   const sites = useSites(store);
   const settings = useSettings(store);
-  const tabState = useTabState(tabId, store);
-  useSiteUrlTracking(sites.value, tabState.update);
+  const panelState = usePanelState(store);
+  useSiteUrlTracking(sites.value, panelState.update);
   const [showSettings, setShowSettings] = useState(false);
   const frozenUrls = useRef<Record<string, string>>({});
 
   const items = buildNavItems(sites.value);
-  const activeId = resolveActiveId(items, tabState.value.activeItemId);
+  const activeId = resolveActiveId(items, panelState.value.activeItemId);
   const visited = useVisited(
     activeId,
     items.map((item) => item.id),
   );
 
-  if (!sites.ready || !settings.ready || !tabState.ready) return null;
+  if (!sites.ready || !settings.ready || !panelState.ready) return null;
 
-  const select = (id: string) => void tabState.update((state) => withActiveItem(state, id));
+  const select = (id: string) => void panelState.update((state) => withActiveItem(state, id));
 
   return (
     <div class="panel">
@@ -75,7 +74,7 @@ export function Panel({ tabId, store }: PanelProps) {
               const url = (frozenUrls.current[site.id] ??= resolveInitialUrl(
                 site,
                 settings.value,
-                tabState.value,
+                panelState.value,
               ));
               return (
                 <div class="panel-item" key={site.id} hidden={site.id !== activeId}>

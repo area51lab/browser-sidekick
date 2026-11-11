@@ -1,4 +1,4 @@
-import type { Settings, Site, TabState } from './types';
+import type { Settings, PanelState, Site } from './types';
 
 export type NewSite = Omit<Site, 'id' | 'createdAt'>;
 export type SitePatch = Partial<Omit<Site, 'id' | 'createdAt'>>;
@@ -30,8 +30,8 @@ export const displayName = (site: Site): string => site.customName?.trim() || si
 export function resolveInitialUrl(
   site: Site,
   settings: Settings,
-  tabState?: TabState | null,
+  panelState?: PanelState | null,
 ): string {
   if (settings.persistence === 'configured-url') return site.url;
-  return tabState?.urlBySiteId[site.id] ?? site.url;
+  return panelState?.urlBySiteId[site.id] ?? site.url;
 }

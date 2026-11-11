@@ -26,8 +26,8 @@ vi.mock('wxt/browser', () => ({
 
 const { useSiteUrlTracking, isExtensionChildFrame } =
   await import('../../entrypoints/sidepanel/useSiteUrlTracking');
-const { defaultTabState } = await import('../../lib/storage');
-import type { Site, TabState } from '../../lib/storage';
+const { defaultPanelState } = await import('../../lib/storage');
+import type { PanelState, Site } from '../../lib/storage';
 
 const sites: Site[] = [{ id: 'a', url: 'https://a.test/', title: 'A', createdAt: 1 }];
 const details = (over: Partial<Details> = {}): Details => ({
@@ -40,8 +40,8 @@ const details = (over: Partial<Details> = {}): Details => ({
 
 function mount(currentSites: Site[] = sites) {
   const host = document.createElement('div');
-  let state: TabState = defaultTabState(1);
-  const update = vi.fn(async (change: (s: TabState) => TabState) => {
+  let state: PanelState = defaultPanelState();
+  const update = vi.fn(async (change: (s: PanelState) => PanelState) => {
     state = change(state);
   });
   const Probe = ({ list }: { list: Site[] }) => {

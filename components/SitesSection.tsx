@@ -13,17 +13,20 @@ export function SitesSection(props: SitesSectionProps) {
   return (
     <section class="sites" aria-labelledby="sites-heading">
       <h2 id="sites-heading">Sites</h2>
-      <SiteForm
-        {...props}
-        key={editing?.id ?? 'new'}
-        site={editing ?? undefined}
-        onDone={() => setEditing(null)}
-      />
-      <SiteList
-        store={props.store}
-        onEdit={setEditing}
-        onRemove={(site) => site.id === editing?.id && setEditing(null)}
-      />
+      <div class="sites__card">
+        <SiteList
+          store={props.store}
+          onEdit={setEditing}
+          onRemove={(site) => site.id === editing?.id && setEditing(null)}
+          editingId={editing?.id}
+          renderEditor={(site) => (
+            <SiteForm {...props} key={site.id} site={site} onDone={() => setEditing(null)} />
+          )}
+        />
+        <div class="sites__add">
+          <SiteForm {...props} key="new" />
+        </div>
+      </div>
     </section>
   );
 }

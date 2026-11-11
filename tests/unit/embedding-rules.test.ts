@@ -6,6 +6,7 @@ import {
   siteHost,
   uniqueSiteDomains,
 } from '../../lib/embedding/rules';
+import { isEmbeddingUnsupported } from '../../lib/embedding/unsupported';
 
 const EXT = 'abcdefghijklmnop';
 
@@ -142,5 +143,18 @@ describe('buildEmbeddingRules', () => {
   it('does not let hostile urls inject into the host', () => {
     const rules = buildEmbeddingRules([{ url: 'https://evil.com\\@good.com/*' }], EXT);
     expect(rules.map((r) => r.condition.requestDomains)).toEqual([['evil.com']]);
+  });
+});
+
+describe('isEmbeddingUnsupported', () => {
+  it('flags known unembeddable hosts and their subdomains', () => {
+    expect(isEmbeddingUnsupported('https://mail.google.com/mail/u/0/')).toBe(true);
+    expect(isEmbeddingUnsupported('https://www.gmail.com')).toBe(true);
+  });
+
+  it('allows other hosts, including look-alikes', () => {
+    expect(isEmbeddingUnsupported('https://google.com')).toBe(false);
+    expect(isEmbeddingUnsupported('https://notgmail.com')).toBe(false);
+    expect(isEmbeddingUnsupported('nope')).toBe(false);
   });
 });

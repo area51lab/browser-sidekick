@@ -8,6 +8,6 @@ export { createEntry } from './entry';
 export type { Entry } from './entry';
 export { SCHEMA_VERSION, migrate } from './schema';
 export type { Migration, Snapshot } from './schema';
-export { createStore, getStore, registerTabCleanup, tabKey } from './store';
+export { createStore, getStore } from './store';
 export type { Store, StoreOptions } from './store';
-export * from './tabState';
+export * from './panelState';

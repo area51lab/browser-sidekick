@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { defaultTabState, withActiveItem, withSiteUrl } from '../../lib/storage';
+import { defaultPanelState, withActiveItem, withSiteUrl } from '../../lib/storage';
 
-describe('tab state reducers', () => {
-  const base = defaultTabState(1);
+describe('panel state reducers', () => {
+  const base = defaultPanelState();
 
   it('sets the active item and keeps identity when unchanged', () => {
     const next = withActiveItem(base, 'a');

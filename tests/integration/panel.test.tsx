@@ -74,10 +74,10 @@ async function setup(settings: Partial<Settings>, initialSites: Site[] = sites, 
     }),
     session: createFakeAdapter(),
   });
-  if (activeItemId) await store.tabState(1).set({ tabId: 1, activeItemId, urlBySiteId: {} });
+  if (activeItemId) await store.panelState.set({ activeItemId, urlBySiteId: {} });
   const host = document.createElement('div');
   document.body.append(host);
-  act(() => render(<Panel tabId={1} store={store} />, host));
+  act(() => render(<Panel store={store} />, host));
   await flush();
   return { host, store, unmount: () => act(() => render(null, host)) };
 }
@@ -97,7 +97,7 @@ describe('Panel', () => {
   it('renders nothing until storage is ready', () => {
     const host = document.createElement('div');
     const store = createStore({ local: createFakeAdapter(), session: createFakeAdapter() });
-    act(() => render(<Panel tabId={1} store={store} />, host));
+    act(() => render(<Panel store={store} />, host));
     expect(host.innerHTML).toBe('');
   });
 
@@ -139,7 +139,7 @@ describe('Panel', () => {
     await settle(() => select.dispatchEvent(new Event('change')));
     select.value = 'a';
     await settle(() => select.dispatchEvent(new Event('change')));
-    expect((await store.tabState(1).get()).activeItemId).toBe('');
+    expect((await store.panelState.get()).activeItemId).toBe('');
   });
 
   it('dropdown lists all items and switches on change', async () => {
@@ -150,7 +150,7 @@ describe('Panel', () => {
     const select = host.querySelector('wa-select') as HTMLElement & { value: string };
     select.value = 'b';
     await settle(() => select.dispatchEvent(new Event('change')));
-    expect((await store.tabState(1).get()).activeItemId).toBe('b');
+    expect((await store.panelState.get()).activeItemId).toBe('b');
     expect(frames(host)).toHaveLength(2);
   });
 
@@ -272,11 +272,9 @@ describe('Panel', () => {
       }),
       session: createFakeAdapter(),
     });
-    await store
-      .tabState(1)
-      .set({ tabId: 1, activeItemId: 'a', urlBySiteId: { a: 'https://a.test/deep' } });
+    await store.panelState.set({ activeItemId: 'a', urlBySiteId: { a: 'https://a.test/deep' } });
     const host = document.createElement('div');
-    act(() => render(<Panel tabId={1} store={store} />, host));
+    act(() => render(<Panel store={store} />, host));
     await flush();
     cleanup = () => act(() => render(null, host));
     expect(frames(host)[0]!.getAttribute('data-url')).toBe(expected);

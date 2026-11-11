@@ -66,10 +66,10 @@ const themeSwitch = () =>
   };
 
 describe('options page', () => {
-  it('renders the three sections with labelled groups', async () => {
+  it('renders the sections with labelled groups', async () => {
     await mountNode(<SettingsPage store={newStore()} />);
     const headings = [...host.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings).toEqual(['General', 'Sites', 'About']);
+    expect(headings).toEqual(['General', 'Sites']);
     expect(group('navigationMode')?.getAttribute('label')).toBe('Navigation');
     expect(group('persistence')?.getAttribute('label')).toBe('When opening a site');
     expect(group('navigationMode')?.querySelectorAll('wa-radio')).toHaveLength(3);
@@ -180,7 +180,7 @@ describe('options page', () => {
 describe('about section', () => {
   it('shows the manifest version and source link', async () => {
     await mountNode(<AboutSection />);
-    expect(host.textContent).toContain(`${DISPLAY_NAME} version 9.8.7`);
+    expect(host.textContent).toContain(`${DISPLAY_NAME} v9.8.7`);
     expect(host.querySelector('a')?.getAttribute('href')).toBe(SOURCE_URL);
   });
 

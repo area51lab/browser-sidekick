@@ -18,8 +18,7 @@ export interface Settings {
   useBrowserThemeColors?: boolean;
 }
 
-export interface TabState {
-  tabId: number;
+export interface PanelState {
   activeItemId: string;
   urlBySiteId: Record<string, string>;
 }
@@ -42,8 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const DEFAULT_NOTES: Notes = { markdown: '', updatedAt: 0 };
 
-export const defaultTabState = (tabId: number): TabState => ({
-  tabId,
+export const defaultPanelState = (): PanelState => ({
   activeItemId: '',
   urlBySiteId: {},
 });

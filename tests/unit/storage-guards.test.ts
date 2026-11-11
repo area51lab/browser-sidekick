@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   isNotes,
   isSite,
-  isTabState,
+  isPanelState,
   parseNotes,
   parseSettings,
   parseSites,
-  parseTabState,
+  parsePanelState,
 } from '../../lib/storage/guards';
-import { DEFAULT_NOTES, DEFAULT_SETTINGS, defaultTabState } from '../../lib/storage/types';
+import { DEFAULT_NOTES, DEFAULT_SETTINGS, defaultPanelState } from '../../lib/storage/types';
 
 const site = { id: 'a', url: 'https://a.test', title: 'A', createdAt: 1 };
 
@@ -24,13 +24,13 @@ describe('guards', () => {
     expect(isSite([site])).toBe(false);
   });
 
-  it('validates notes and tab state', () => {
+  it('validates notes and panel state', () => {
     expect(isNotes({ markdown: '', updatedAt: 0 })).toBe(true);
     expect(isNotes({ markdown: 1, updatedAt: 0 })).toBe(false);
-    expect(isTabState({ tabId: 1, activeItemId: 'a', urlBySiteId: { a: 'u' } })).toBe(true);
-    expect(isTabState({ tabId: 1, activeItemId: 'a', urlBySiteId: { a: 1 } })).toBe(false);
-    expect(isTabState({ tabId: 1, activeItemId: 'a', urlBySiteId: [] })).toBe(false);
-    expect(isTabState({ tabId: '1', activeItemId: 'a', urlBySiteId: {} })).toBe(false);
+    expect(isPanelState({ activeItemId: 'a', urlBySiteId: { a: 'u' } })).toBe(true);
+    expect(isPanelState({ activeItemId: 'a', urlBySiteId: { a: 1 } })).toBe(false);
+    expect(isPanelState({ activeItemId: 'a', urlBySiteId: [] })).toBe(false);
+    expect(isPanelState({ activeItemId: 1, urlBySiteId: {} })).toBe(false);
   });
 
   it('parses sites dropping invalid entries', () => {
@@ -50,11 +50,11 @@ describe('guards', () => {
     expect(parseSettings({ persistence: 'configured-url' }).persistence).toBe('configured-url');
   });
 
-  it('falls back for notes and tab state', () => {
+  it('falls back for notes and panel state', () => {
     expect(parseNotes(null)).toBe(DEFAULT_NOTES);
     expect(parseNotes({ markdown: 'x', updatedAt: 2 })).toEqual({ markdown: 'x', updatedAt: 2 });
-    expect(parseTabState(7)(undefined)).toEqual(defaultTabState(7));
-    const state = { tabId: 7, activeItemId: 'a', urlBySiteId: {} };
-    expect(parseTabState(7)(state)).toBe(state);
+    expect(parsePanelState(undefined)).toEqual(defaultPanelState());
+    const state = { activeItemId: 'a', urlBySiteId: {} };
+    expect(parsePanelState(state)).toBe(state);
   });
 });

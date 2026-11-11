@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { render } from 'preact';
 import { act } from 'preact/test-utils';
-import { useNotes, useSettings, useSites, useTabState } from '../../lib/storage/hooks';
+import { useNotes, useSettings, usePanelState, useSites } from '../../lib/storage/hooks';
 import type { StorageState } from '../../lib/storage/hooks';
 import { createStore } from '../../lib/storage/store';
 import { DEFAULT_SETTINGS } from '../../lib/storage/types';
@@ -61,40 +61,31 @@ describe('storage hooks', () => {
     const storeA = createStore({ local, session });
     const storeB = createStore({ local, session });
     const sitesA = track(() => useSites(storeA));
-    const tabA = track(() => useTabState(3, storeA));
+    const panelA = track(() => usePanelState(storeA));
     await flush();
 
     await act(() => storeB.sites.set([site]));
-    await act(() => storeB.tabState(3).set({ tabId: 3, activeItemId: 'a', urlBySiteId: {} }));
-    await act(() => storeB.tabState(4).set({ tabId: 4, activeItemId: 'z', urlBySiteId: {} }));
+    await act(() => storeB.panelState.set({ activeItemId: 'a', urlBySiteId: {} }));
     expect(sitesA.current.value).toEqual([site]);
-    expect(tabA.current.value.activeItemId).toBe('a');
-
-    await act(() => storeB.removeTabState(3));
-    expect(tabA.current.value).toEqual({ tabId: 3, activeItemId: '', urlBySiteId: {} });
+    expect(panelA.current.value.activeItemId).toBe('a');
   });
 
-  it('resets when the tab id changes and stops listening on unmount', async () => {
-    const local = createFakeAdapter();
-    const session = createFakeAdapter();
-    const store = createStore({ local, session });
-    await store.tabState(2).set({ tabId: 2, activeItemId: 'two', urlBySiteId: {} });
+  it('stops listening to panel state on unmount', async () => {
+    const store = createStore({ local: createFakeAdapter(), session: createFakeAdapter() });
+    await store.panelState.set({ activeItemId: 'one', urlBySiteId: {} });
 
     const host = document.createElement('div');
     const ref = { current: undefined as unknown as StorageState<{ activeItemId: string }> };
-    const Probe = ({ tabId }: { tabId: number }) => {
-      ref.current = useTabState(tabId, store);
+    const Probe = () => {
+      ref.current = usePanelState(store);
       return null;
     };
-    act(() => render(<Probe tabId={1} />, host));
+    act(() => render(<Probe />, host));
     await flush();
-    expect(ref.current.value.activeItemId).toBe('');
-    act(() => render(<Probe tabId={2} />, host));
-    await flush();
-    expect(ref.current.value.activeItemId).toBe('two');
+    expect(ref.current.value.activeItemId).toBe('one');
 
     act(() => render(null, host));
-    await store.tabState(2).set({ tabId: 2, activeItemId: 'late', urlBySiteId: {} });
-    expect(ref.current.value.activeItemId).toBe('two');
+    await store.panelState.set({ activeItemId: 'late', urlBySiteId: {} });
+    expect(ref.current.value.activeItemId).toBe('one');
   });
 });

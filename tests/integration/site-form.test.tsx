@@ -169,7 +169,7 @@ describe('SiteForm: adding', () => {
     expect(onDone).toHaveBeenCalledOnce();
     expect(input('url').value).toBe('');
     expect(input('name').value).toBe('');
-    expect(host.querySelector('[data-testid="site-icon-empty"]')).not.toBeNull();
+    expect(host.querySelector('.site-form__preview .site-icon')).toBeNull();
   });
 
   it('stores an edited name as customName and keeps it across later fetches', async () => {
@@ -229,6 +229,15 @@ describe('SiteForm: adding', () => {
     await submit();
     expect(requestOrigin).not.toHaveBeenCalled();
     expect(await saved(store)).toEqual([]);
+  });
+
+  it('warns about sites known to block embedding but still lets them be added', async () => {
+    const { store } = await setup();
+    await type('url', 'https://mail.google.com/mail/u/0/');
+    await blur('url');
+    expect(host.querySelector('wa-callout')?.textContent).toContain('block embedding');
+    await submit();
+    expect(await saved(store)).toMatchObject([{ url: 'https://mail.google.com/mail/u/0/' }]);
   });
 
   it('skips fetching when permission is denied and falls back to the hostname', async () => {

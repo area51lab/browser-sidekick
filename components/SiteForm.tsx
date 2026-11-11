@@ -5,6 +5,7 @@ import '@awesome.me/webawesome/dist/components/input/input.js';
 import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import './sites.css';
 import { ensureSitePermission } from '../lib/embedding/permissions';
+import { isEmbeddingUnsupported } from '../lib/embedding/unsupported';
 import { fetchSiteMetadata, normalizeUrl } from '../lib/siteMetadata';
 import type { SiteMetadata } from '../lib/siteMetadata';
 import { addSite, createSite, updateSite, useSites } from '../lib/storage';
@@ -27,6 +28,8 @@ type Details = { url: string; title: string; faviconUrl: string };
 const MESSAGES = {
   invalid: 'Enter a valid http(s) address.',
   denied: 'Access to this site was not granted, so its name and icon could not be loaded.',
+  unsupported:
+    'This site is known to block embedding in ways Sidekick cannot bypass. You can still add it and use "Open in tab" if it does not load.',
   failed: 'Could not load the site details. You can still save it with your own name.',
 };
 
@@ -93,6 +96,7 @@ export function SiteForm({
     if (!nameEdited) setName(result.title);
     if (!granted) fail(MESSAGES.denied);
     else if (metadata.error) fail(MESSAGES.failed);
+    else if (isEmbeddingUnsupported(normalized)) fail(MESSAGES.unsupported);
     else setStatus('idle');
     return result;
   }
@@ -127,46 +131,50 @@ export function SiteForm({
 
   return (
     <form class="site-form" onSubmit={submit} aria-label={site ? 'Edit site' : 'Add site'}>
-      <wa-input
-        label="Address"
-        name="url"
-        type="text"
-        placeholder="example.com"
-        required
-        value={url}
-        onInput={(event: Event) => setUrl(valueOf(event))}
-        onBlur={() => url.trim() && void load()}
-      />
-      <wa-input
-        label="Name"
-        name="name"
-        type="text"
-        placeholder={title || 'Taken from the site'}
-        value={name}
-        onInput={(event: Event) => {
-          setName(valueOf(event));
-          setNameEdited(true);
-        }}
-      />
-      <div class="site-form__preview">
-        <SiteIcon src={faviconUrl} />
-        {status === 'loading' && <wa-spinner aria-label="Loading site details" />}
-        {status === 'loading' && <span>Loading site details…</span>}
+      <div class="site-form__fields">
+        <wa-input
+          label="Address"
+          name="url"
+          type="text"
+          placeholder="example.com"
+          required
+          value={url}
+          onInput={(event: Event) => setUrl(valueOf(event))}
+          onBlur={() => url.trim() && void load()}
+        />
+        <wa-input
+          label="Name"
+          name="name"
+          type="text"
+          placeholder={title || 'Taken from the site'}
+          value={name}
+          onInput={(event: Event) => {
+            setName(valueOf(event));
+            setNameEdited(true);
+          }}
+        />
       </div>
       {status === 'error' && (
         <wa-callout variant="warning" role="alert">
           {message}
         </wa-callout>
       )}
-      <div class="site-form__actions">
-        <wa-button type="submit" variant="brand">
-          {site ? 'Save' : 'Add site'}
-        </wa-button>
-        {site && (
-          <wa-button type="button" onClick={onDone}>
-            Cancel
+      <div class="site-form__footer">
+        <div class="site-form__preview">
+          {status === 'loading' && <wa-spinner aria-label="Loading site details" />}
+          {status === 'loading' && <span>Loading site details…</span>}
+          {status !== 'loading' && faviconUrl && <SiteIcon src={faviconUrl} />}
+        </div>
+        <div class="site-form__actions">
+          {site && (
+            <wa-button type="button" onClick={onDone}>
+              Cancel
+            </wa-button>
+          )}
+          <wa-button type="submit" variant="brand">
+            {site ? 'Save' : 'Add site'}
           </wa-button>
-        )}
+        </div>
       </div>
     </form>
   );

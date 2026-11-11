@@ -64,3 +64,7 @@ html.sk-system-colors {
   --wa-color-brand-on-quiet: CanvasText;
   --wa-color-brand-border-normal: AccentColor;
 }
+
+.no-margin {
+  margin: 0;
+}

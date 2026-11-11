@@ -3,8 +3,25 @@ import { act } from 'preact/test-utils';
 import { render } from 'preact';
 
 const create = vi.hoisted(() => vi.fn());
+const nav = vi.hoisted(() => ({
+  listeners: new Set<(details: Record<string, unknown>) => unknown>(),
+  getFrame: vi.fn(),
+}));
 const perms = vi.hoisted(() => ({ has: vi.fn(), ensure: vi.fn() }));
-vi.mock('wxt/browser', () => ({ browser: { tabs: { create } } }));
+vi.mock('wxt/browser', () => ({
+  browser: {
+    tabs: { create },
+    runtime: { getURL: () => 'chrome-extension://x/' },
+    webNavigation: {
+      getFrame: nav.getFrame,
+      onErrorOccurred: {
+        addListener: (l: (details: Record<string, unknown>) => unknown) => nav.listeners.add(l),
+        removeListener: (l: (details: Record<string, unknown>) => unknown) =>
+          nav.listeners.delete(l),
+      },
+    },
+  },
+}));
 vi.mock('../../lib/embedding/permissions', () => ({
   hasSitePermission: perms.has,
   ensureSitePermission: perms.ensure,
@@ -26,8 +43,10 @@ const frame = () => host.querySelector('iframe') as HTMLIFrameElement;
 
 beforeEach(() => {
   vi.useFakeTimers();
+  nav.listeners.clear();
   perms.has.mockResolvedValue(true);
   perms.ensure.mockResolvedValue(true);
+  nav.getFrame.mockResolvedValue({ url: 'chrome-extension://x/sidepanel.html' });
   host = document.createElement('div');
 });
 
@@ -107,6 +126,55 @@ describe('SiteFrame', () => {
       frame().dispatchEvent(new Event('load'));
     });
     expect(status()).toBe('refused');
+  });
+
+  describe('framing refusal events', () => {
+    const fire = (over: Record<string, unknown> = {}) =>
+      act(async () => {
+        await Promise.all(
+          [...nav.listeners].map((l) =>
+            l({
+              tabId: 1,
+              frameId: 4,
+              parentFrameId: 0,
+              url: 'https://mail.a.com/inbox',
+              error: 'net::ERR_BLOCKED_BY_RESPONSE',
+              ...over,
+            }),
+          ),
+        );
+      });
+
+    it('shows the fallback right away when the browser blocks the frame', async () => {
+      await act(() => {
+        render(<SiteFrame url="https://a.com/" />, host);
+      });
+      await fire();
+      expect(status()).toBe('refused');
+      expect(host.textContent).toContain('refuses to be embedded');
+    });
+
+    it('ignores other errors, other sites and frames outside the panel', async () => {
+      await act(() => {
+        render(<SiteFrame url="https://a.com/" />, host);
+      });
+      await fire({ error: 'net::ERR_NAME_NOT_RESOLVED' });
+      await fire({ url: 'https://other.com/' });
+      nav.getFrame.mockResolvedValue({ url: 'https://web.test/' });
+      await fire();
+      expect(status()).toBe('loading');
+    });
+
+    it('stops listening on unmount', async () => {
+      await act(() => {
+        render(<SiteFrame url="https://a.com/" />, host);
+      });
+      expect(nav.listeners.size).toBe(1);
+      await act(() => {
+        render(null, host);
+      });
+      expect(nav.listeners.size).toBe(0);
+    });
   });
 
   it('opens the site in a new tab from the fallback', async () => {

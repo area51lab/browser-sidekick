@@ -1,36 +1,22 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { browser } from 'wxt/browser';
 import { createFrameAttribution } from '../../lib/navigation/attribution';
+import { isExtensionChildFrame } from '../../lib/navigation/frames';
+import type { FrameDetails } from '../../lib/navigation/frames';
 import { withSiteUrl } from '../../lib/storage';
-import type { Site, TabState } from '../../lib/storage';
+import type { PanelState, Site } from '../../lib/storage';
 
-interface NavigationDetails {
-  tabId: number;
-  frameId: number;
-  parentFrameId: number;
-  url: string;
-}
+type NavigationDetails = FrameDetails;
 
-export async function isExtensionChildFrame(details: NavigationDetails): Promise<boolean> {
-  if (details.frameId === 0) return false;
-  try {
-    const parent = await browser.webNavigation.getFrame({
-      tabId: details.tabId,
-      frameId: details.parentFrameId,
-    });
-    return parent?.url?.startsWith(browser.runtime.getURL('/')) ?? false;
-  } catch {
-    return false;
-  }
-}
+export { isExtensionChildFrame };
 
 /**
- * Records the current URL of each embedded site into the tab state, using sub frame navigation
+ * Records the current URL of each embedded site into the panel state, using sub frame navigation
  * events limited to frames whose parent is an extension page.
  */
 export function useSiteUrlTracking(
   sites: Site[],
-  update: (change: (state: TabState) => TabState) => Promise<void>,
+  update: (change: (state: PanelState) => PanelState) => Promise<void>,
 ): void {
   const latest = useRef({ sites, update });
   latest.current = { sites, update };

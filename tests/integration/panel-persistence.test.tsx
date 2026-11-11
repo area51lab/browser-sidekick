@@ -8,7 +8,6 @@ type ActivatedListener = (info: { tabId: number; windowId: number }) => void;
 
 const navListeners = new Set<NavListener>();
 const activatedListeners = new Set<ActivatedListener>();
-const query = vi.fn();
 
 vi.mock('@awesome.me/webawesome/dist/components/textarea/textarea.js', () => ({}));
 vi.mock('@awesome.me/webawesome/dist/components/select/select.js', () => ({}));
@@ -23,7 +22,7 @@ vi.mock('wxt/browser', () => ({
     runtime: { openOptionsPage: vi.fn(), getURL: () => 'chrome-extension://x/' },
     storage: {},
     tabs: {
-      query,
+      query: vi.fn(async () => [{ id: 1, windowId: 1 }]),
       create: vi.fn(),
       onActivated: {
         addListener: (l: ActivatedListener) => activatedListeners.add(l),
@@ -90,67 +89,67 @@ async function setup(persistence: Persistence) {
   return { host, store, unmount: () => act(() => render(null, host)) };
 }
 
-describe('per-tab persistence', () => {
+describe('panel persistence', () => {
   let cleanup = () => {};
 
   beforeEach(() => {
     navListeners.clear();
     activatedListeners.clear();
-    query.mockReset();
-    query.mockResolvedValue([{ id: 1, windowId: 1 }]);
   });
   afterEach(() => cleanup());
 
-  it('restores the active item and visited url of each tab with last-url', async () => {
+  it('keeps the active item and frames when the browser tab changes', async () => {
+    const { host, unmount } = await setup('last-url');
+    cleanup = unmount;
+    await navigate(7, 'https://a.test/deep/page');
+    await act(async () => tabs(host)[1]!.click());
+    await flush();
+    const before = [...host.querySelectorAll('.frame')];
+    expect(frameSrcs(host)).toEqual(['https://a.test/', 'https://b.test/']);
+
+    await switchBrowserTab(2);
+    await switchBrowserTab(1);
+
+    expect(tabs(host)[1]!.getAttribute('aria-selected')).toBe('true');
+    expect([...host.querySelectorAll('.frame')]).toEqual(before);
+    expect(activatedListeners.size).toBe(0);
+  });
+
+  it('records the visited url of each site in the shared panel state', async () => {
     const { host, store, unmount } = await setup('last-url');
     cleanup = unmount;
-    expect(frameSrcs(host)).toEqual(['https://a.test/']);
-
     await navigate(7, 'https://a.test/deep/page');
     await act(async () => tabs(host)[1]!.click());
     await flush();
     await navigate(8, 'https://b.test/inbox');
-    expect((await store.tabState(1).get()).urlBySiteId).toEqual({
+    expect((await store.panelState.get()).urlBySiteId).toEqual({
       a: 'https://a.test/deep/page',
       b: 'https://b.test/inbox',
     });
-
-    await switchBrowserTab(2);
-    expect(frameSrcs(host)).toEqual(['https://a.test/']);
-    expect(tabs(host)[0]!.getAttribute('aria-selected')).toBe('true');
-
-    await switchBrowserTab(1);
-    expect(tabs(host)[1]!.getAttribute('aria-selected')).toBe('true');
-    expect(frameSrcs(host)).toEqual(['https://b.test/inbox']);
-    await act(async () => tabs(host)[0]!.click());
-    await flush();
-    expect(frameSrcs(host)).toEqual(['https://a.test/deep/page', 'https://b.test/inbox']);
   });
 
-  it('keeps iframes of the viewed tab only', async () => {
-    const { host, unmount } = await setup('last-url');
-    cleanup = unmount;
-    await act(async () => tabs(host)[1]!.click());
+  it('restores the last urls when the panel is reopened with last-url', async () => {
+    const first = await setup('last-url');
+    await navigate(7, 'https://a.test/deep/page');
+    first.unmount();
+    act(() => render(<App store={first.store} />, first.host));
     await flush();
-    expect(host.querySelectorAll('.frame')).toHaveLength(2);
-    await switchBrowserTab(2);
-    expect(host.querySelectorAll('.frame')).toHaveLength(1);
+    cleanup = () => act(() => render(null, first.host));
+    expect(frameSrcs(first.host)).toEqual(['https://a.test/deep/page']);
   });
 
-  it('always loads the configured url with configured-url while still restoring the active item', async () => {
-    const { host, unmount } = await setup('configured-url');
-    cleanup = unmount;
+  it('always loads the configured url with configured-url while keeping the active item', async () => {
+    const { host, store, unmount } = await setup('configured-url');
     await navigate(7, 'https://a.test/deep/page');
     await act(async () => tabs(host)[1]!.click());
     await flush();
+    unmount();
+    act(() => render(<App store={store} />, host));
+    await flush();
+    cleanup = () => act(() => render(null, host));
 
-    await switchBrowserTab(2);
-    await switchBrowserTab(1);
     expect(tabs(host)[1]!.getAttribute('aria-selected')).toBe('true');
     expect(frameSrcs(host)).toEqual(['https://b.test/']);
-    await act(async () => tabs(host)[0]!.click());
-    await flush();
-    expect(frameSrcs(host)).toEqual(['https://a.test/', 'https://b.test/']);
   });
 
   it('does not reload a mounted iframe when its tracked url changes', async () => {

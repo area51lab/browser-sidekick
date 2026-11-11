@@ -51,6 +51,13 @@
 }
 
 .panel-settings {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.panel-settings .settings-scroll {
   flex: 1;
   min-height: 0;
   overflow: auto;

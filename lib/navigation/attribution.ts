@@ -16,6 +16,12 @@ const hostnameOf = (url: string): string | undefined => {
 const sameSiteHost = (a: string, b: string): boolean =>
   a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
 
+export const urlsShareSite = (a: string, b: string): boolean => {
+  const hostA = hostnameOf(a);
+  const hostB = hostnameOf(b);
+  return hostA !== undefined && hostB !== undefined && sameSiteHost(hostA, hostB);
+};
+
 export const trackableUrl = (url: string): boolean => /^https?:\/\//.test(url);
 
 export function findSiteByHost(sites: Site[], url: string): Site | undefined {

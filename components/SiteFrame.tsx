@@ -3,6 +3,8 @@ import '@awesome.me/webawesome/dist/components/spinner/spinner.js';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { browser } from 'wxt/browser';
 import { ensureSitePermission, hasSitePermission } from '../lib/embedding/permissions';
+import { urlsShareSite } from '../lib/navigation/attribution';
+import { isExtensionChildFrame, isFramingRefusal } from '../lib/navigation/frames';
 
 export const FRAME_LOAD_TIMEOUT_MS = 10_000;
 
@@ -42,6 +44,23 @@ function SiteFrameView({ url, title, timeoutMs = FRAME_LOAD_TIMEOUT_MS }: SiteFr
       active = false;
     };
   }, [url, attempt]);
+
+  useEffect(() => {
+    const onErrorOccurred = browser?.webNavigation?.onErrorOccurred;
+    if (!onErrorOccurred) return;
+    const handle = async (details: {
+      tabId: number;
+      frameId: number;
+      parentFrameId: number;
+      url: string;
+      error: string;
+    }) => {
+      if (!isFramingRefusal(details.error) || !urlsShareSite(details.url, url)) return;
+      if (await isExtensionChildFrame(details)) setStatus('refused');
+    };
+    onErrorOccurred.addListener(handle);
+    return () => onErrorOccurred.removeListener(handle);
+  }, [url]);
 
   useEffect(() => {
     const timer = setTimeout(() => setStatus((s) => (s === 'loading' ? 'refused' : s)), timeoutMs);

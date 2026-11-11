@@ -9,10 +9,10 @@ From a release archive built with `pnpm zip` / `pnpm zip:firefox`, or load unpac
 ## Using sidekick
 
 - **Open the panel**: click the SideKick toolbar icon. Chrome opens the side panel; Firefox toggles the sidebar.
-- **Add a site**: open the options page, type an address under Sites and press "Add site". The browser asks for access to that one site only; sidekick uses it to read the site's name and icon and to let it be shown in the panel. If the details cannot be loaded, the site is still saved with its hostname and `/favicon.ico`. You can rename, edit and delete sites later, and reorder them by dragging a row (the ↑ / ↓ buttons remain as the keyboard-accessible alternative).
+- **Add a site**: open the options page, type an address under Sites and press "Add site". The browser asks for access to that one site only; sidekick uses it to read the site's name and icon and to let it be shown in the panel. If the details cannot be loaded, the site is still saved with its hostname and `/favicon.ico`. You can rename, edit and delete sites later, and reorder them by dragging a row.
 - **Settings in the panel**: the cog button (right end of the top bar and dropdown, bottom of the icon sidebar) opens the same settings as the options page inside the panel, with a "Back to sites" button. The options page also works standalone.
 - **Navigation mode**: in the options General section choose a dropdown, an icon sidebar or a top bar (icons or names). An open panel updates live.
-- **Persistence**: with "Remember last URL" a site reopens where you left it in that browser tab; with "Always return to configured URL" it always starts from its saved address.
+- **Persistence**: with "Remember last URL" a site reopens where you left it; with "Always return to configured URL" it always starts from its saved address.
 - **Notes**: the Notes item holds markdown notes that autosave, with an edit and preview toggle. Previews are sanitized.
 - **Theme**: the panel follows the browser light/dark preference. "Use browser theme colors" (on by default) also applies Firefox theme colors, or system colors on Chrome.
 - Some sites refuse to be embedded; the panel then offers "Open in tab". See the known limits below.
@@ -65,7 +65,7 @@ lib/                  mounting, site metadata, markdown, toolbar action
 lib/theme/            color scheme, browser theme mapping and `useTheme()`
 lib/storage/          typed, versioned storage layer, site helpers and Preact hooks
 lib/embedding/        DNR rule builder, rule sync and site permission helper
-lib/navigation/       active browser tab and per-tab navigation helpers
+lib/navigation/       frame attribution for URL tracking
 assets/               base stylesheet, icon source
 scripts/              icon generation
 tests/unit/           unit tests
@@ -94,7 +94,7 @@ Run once in Chrome and once in Firefox after loading the build.
 4. Add a second site, then rename, reorder and delete one; the panel updates without reopening.
 5. Switch Navigation between Dropdown, Icon sidebar and Top bar (icons and names) with the panel open: it changes live and clicking an item shows that site.
 6. Open Notes, type markdown, wait for "Saved", toggle Preview (headings and lists render, a `<script>` stays inert), close and reopen the panel: the text is still there.
-7. Navigate inside a site, switch to another browser tab and back: with "Remember last URL" the site reopens at the last page; with "Always return to configured URL" it starts from the saved address (Firefox may always use the configured URL, a known limit).
+7. Navigate inside a site, close and reopen the panel: with "Remember last URL" the site reopens at the last page; with "Always return to configured URL" it starts from the saved address (Firefox may always use the configured URL, a known limit).
 8. Switch the OS or browser to dark mode: the panel and options follow. Toggle "Use browser theme colors" off and on; on Firefox with a custom theme the colors change.
 9. Add a site that still refuses embedding (one that detects framing in JavaScript): after up to 10 seconds the "refuses to be embedded" message appears with "Open in tab".
 10. Deny the permission prompt when adding a site: a warning appears and the site can still be saved with its hostname.
@@ -117,17 +117,18 @@ Sites are shown in an iframe, and most sites forbid that with `X-Frame-Options` 
 - Redirects across different registrable domains (for example a login on another domain) are not covered, since the permission and rules stop at the parent domain of the saved site.
 - Proton-like apps: besides framing headers, they may rely on third-party cookies (the account host sets cookies in an extension-origin frame, so `SameSite=Lax/Strict` cookies are dropped and Chrome's third-party cookie blocking can break sign-in), on JavaScript framing checks, and on `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers. Only `X-Frame-Options` and CSP are stripped; if login still fails after access is granted, use "Open in tab". This was reasoned from the code and headers, not verified against Proton itself.
 - No Chromium e2e covers the cross-host redirect: `modifyHeaders` needs a real host permission and `permissions.request` cannot be accepted in a headless run, so the redirect scope is covered by unit and integration tests.
-- A refused frame cannot be told apart from a slow site, so the fallback relies on a load timeout.
+- `SiteFrame` also listens to `webNavigation.onErrorOccurred`: when the browser blocks a site frame by response (`ERR_BLOCKED_BY_RESPONSE` and similar) the fallback shows immediately instead of after the timeout. Refusals done in JavaScript are invisible to the browser, so for those the fallback still relies on the load timeout. Firefox error names were not verified.
+- Adding a site known to block embedding (`lib/embedding/unsupported.ts`) shows a warning but is allowed.
 
-## Per-tab state
+## Panel state
 
-Each browser tab has its own state in `storage.session` (`useTabState(tabId)`): the active item and the current URL of each site. The panel remounts when the active browser tab changes and keeps iframes of the viewed tab only, so nothing is kept alive for other tabs. A tab that has no state starts from defaults (first item, configured URLs). State is removed when the tab closes.
+The panel is decoupled from browser navigation: switching browser tabs does not touch it, so the open sites, the active item and scroll positions stay as they are. Its state lives in a single `storage.session` entry (`usePanelState()`): the active item and the current URL of each site. It survives closing and reopening the panel and is cleared when the browser closes.
 
 - `settings.persistence = 'last-url'` loads the tracked URL when a site iframe is first mounted; `'configured-url'` always loads the configured URL. The URL is resolved once per mount, so navigation inside a frame never reloads it.
 - Tracking: a cross-origin iframe does not expose its location, so `useSiteUrlTracking` listens to `webNavigation.onCommitted` and `onHistoryStateUpdated` for sub frames and keeps only frames whose parent frame is an extension page (`getFrame` on the parent, compared with `runtime.getURL('/')`). A frame is attributed to a site by host on its first event and stays bound to it, so redirects to another host keep being tracked.
 - The `webNavigation` permission is required because there is no other way to read the location of a cross-origin frame. It grants no host access and no page content.
 
-### Per-tab limits
+### Panel state limits
 
 - Events carry a frame id and URL only, so two sites sharing a host (or one a subdomain of the other) are ambiguous; the first one in the list wins.
 - Firefox may not report side panel (sidebar) frames to `webNavigation`; when no events arrive the last URL falls back to the configured one.
@@ -164,7 +165,7 @@ Built manifest (`pnpm build:firefox`, MV3) was checked for: `sidebar_action` poi
 - `KEY_FIREFOX_UNSUPPORTED_BY_MIN_VERSION` and `KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION` for `data_collection_permissions`: the key is required by AMO for new extensions but only understood from Firefox 140 (Android 142); older versions ignore it.
 - `UNSAFE_VAR_ASSIGNMENT` (5 findings, `innerHTML`) in bundled library code (Preact, Web Awesome, DOMPurify, marked). Markdown output goes through DOMPurify before it is rendered.
 
-Firefox-specific limits: see also the embedding and per-tab sections above.
+Firefox-specific limits: see also the embedding and panel state sections above.
 
 - Sidebar frames may not emit `webNavigation` events, so "last URL" can fall back to the configured URL.
 - DNR removes the whole `Content-Security-Policy` header of embedded site frames; `modifyHeaders` needs Firefox 128+.

@@ -12,16 +12,21 @@ export interface SettingsPageProps extends Partial<SitesSectionProps> {
 
 export function SettingsPage({ onBack, ...props }: SettingsPageProps) {
   return (
-    <main class="settings-page">
+    <>
       {onBack && (
         <button type="button" class="settings-back" onClick={onBack}>
           ← Back to sites
         </button>
       )}
-      <h1>{DISPLAY_NAME}</h1>
-      <GeneralSection store={props.store} />
-      <SitesSection {...props} />
-      <AboutSection />
-    </main>
+      <div class="settings-scroll">
+        <main class="settings-page">
+          <h1>{DISPLAY_NAME}</h1>
+          <GeneralSection store={props.store} />
+          <SitesSection {...props} />
+          <hr className="no-margin" />
+          <AboutSection />
+        </main>
+      </div>
+    </>
   );
 }
