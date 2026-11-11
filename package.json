@@ -2,7 +2,7 @@
   "name": "sidekick",
   "description": "Side panel with your favorite websites and notes",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "packageManager": "pnpm@12.16.1",
   "scripts": {
